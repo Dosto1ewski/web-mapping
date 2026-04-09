@@ -1,0 +1,10 @@
+{
+  "name": "web-mapping",
+  "version": "1.0.0",
+  "description": "Small Leaflet starter project (Vanilla JS)",
+  "scripts": {
+    "start": "npx serve . -p 51570"
+  },
+  "author": "",
+  "license": "MIT"
+}
