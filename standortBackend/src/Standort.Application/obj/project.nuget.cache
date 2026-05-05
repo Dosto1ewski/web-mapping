@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "B578wdkcAnc=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\AntoninFahning\\Documents\\GitHub\\standortBackend\\src\\Standort.Application\\Standort.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\AntoninFahning\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,34 @@
+namespace Standort.Domain.DomainExceptions;
+
+public abstract class DomainException : Exception
+{
+    protected DomainException(string message) : base(message) { }
+}
+
+public sealed class GroupNotFoundException : DomainException
+{
+    public GroupNotFoundException(string groupId)
+        : base($"Group '{groupId}' was not found.") { }
+}
+
+public sealed class MemberNotFoundException : DomainException
+{
+    public MemberNotFoundException(string groupId, string memberId)
+        : base($"Member '{memberId}' was not found in group '{groupId}'.") { }
+}
+
+public sealed class InvalidTokenException : DomainException
+{
+    public InvalidTokenException() : base("The provided member token is invalid.") { }
+}
+
+public sealed class InviteCodeNotFoundException : DomainException
+{
+    public InviteCodeNotFoundException(string inviteCode)
+        : base($"Invite code '{inviteCode}' is not valid.") { }
+}
+
+public sealed class ConcurrencyException : DomainException
+{
+    public ConcurrencyException(string message) : base(message) { }
+}
