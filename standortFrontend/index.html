@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Standort Frontend</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="controls">
+    <div class="section">
+      <h3>Create group</h3>
+      <input id="group-name" placeholder="Group name">
+      <input id="creator-name" placeholder="Your name">
+      <button id="create-btn">Create</button>
+    </div>
+
+    <div class="section">
+      <h3>Join group</h3>
+      <input id="invite-code" placeholder="Invite code">
+      <input id="join-name" placeholder="Your name">
+      <button id="join-btn">Join</button>
+    </div>
+
+    <div id="member-controls" style="display:none;">
+      <h3>Member</h3>
+      <div>Invite link: <a id="invite-link" href="#"></a></div>
+      <button id="loc-btn">Share location now</button>
+      <label><input id="auto-share" type="checkbox"> Auto-share</label>
+      <button id="leave-btn">Leave</button>
+    </div>
+
+    <div class="status" id="status">Ready</div>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

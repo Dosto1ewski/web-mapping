@@ -1,0 +1,11 @@
+{
+  "name": "web-mapping-standortfrontend",
+  "version": "1.0.0",
+  "description": "Static frontend for web-mapping (standortfrontend) using Leaflet",
+  "scripts": {
+    "start": "npx http-server ./ -p 8000 -c-1",
+    "dev": "npm run start"
+  },
+  "author": "",
+  "license": "MIT"
+}
