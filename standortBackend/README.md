@@ -1,0 +1,160 @@
+# Standort Backend
+
+Real-time location-sharing backend for a group-based webapp. V1 serves a polling-based API; V2 will add SignalR push.
+
+## Architecture
+
+| Layer | Project |
+|---|---|
+| Domain entities & exceptions | `Standort.Domain` |
+| DTOs, interfaces, validators, services | `Standort.Application` |
+| Cosmos DB repositories, security helpers | `Standort.Infrastructure` |
+| Azure Functions HTTP endpoints | `Standort.Functions` |
+
+**Tech stack:** .NET 9 · Azure Functions Isolated Worker v4 · Azure Cosmos DB SDK 3.x · FluentValidation · xUnit + FluentAssertions + NSubstitute
+
+## Local development
+
+### Prerequisites
+
+- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
+- [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) running on `https://localhost:8081`
+
+### First-time setup
+
+1. Start the Cosmos DB Emulator.
+2. Copy `local.settings.json.example` to `local.settings.json` inside `src/Standort.Functions/` (or create it — see template below). The file is gitignored.
+3. Run `func start` from `src/Standort.Functions/`. The app creates the database and containers on startup if they don't exist.
+
+**`local.settings.json` template:**
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "COSMOSDB_ACCOUNT_ENDPOINT": "https://localhost:8081",
+    "COSMOSDB_ACCOUNT_KEY": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+    "COSMOSDB_DATABASE_NAME": "standort-local",
+    "COSMOSDB_GROUPS_CONTAINER": "groups",
+    "COSMOSDB_INVITECODES_CONTAINER": "inviteCodes"
+  },
+  "Host": {
+    "CORS": "http://localhost:5173,http://localhost:3000",
+    "CORSCredentials": false
+  }
+}
+```
+
+### Run tests
+
+```
+dotnet test
+```
+
+All 42 unit tests run without any external dependencies.
+
+## API
+
+### `POST /api/groups` — Create group
+
+```
+curl -X POST http://localhost:7071/api/groups \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Wandertour Samstag","createdByDisplayName":"Antonin"}'
+```
+
+Response `201 Created`:
+```json
+{
+  "groupId": "...",
+  "inviteCode": "7H4K-P9QD",
+  "memberId": "...",
+  "memberToken": "<save this — shown once>",
+  "displayName": "Antonin"
+}
+```
+
+---
+
+### `POST /api/groups/join` — Join group
+
+```
+curl -X POST http://localhost:7071/api/groups/join \
+  -H "Content-Type: application/json" \
+  -d '{"inviteCode":"7H4K-P9QD","displayName":"Mira"}'
+```
+
+Response `200 OK`:
+```json
+{
+  "groupId": "...",
+  "memberId": "...",
+  "memberToken": "<save this>",
+  "displayName": "Mira"
+}
+```
+
+Rejoining with an existing display name rotates the token ("newest session wins"). The old token returns `401` on subsequent location updates.
+
+---
+
+### `PUT /api/groups/{groupId}/members/{memberId}/location` — Update location
+
+```
+curl -X PUT http://localhost:7071/api/groups/{groupId}/members/{memberId}/location \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <memberToken>" \
+  -d '{"lat":49.0128,"lng":8.4416,"accuracyMeters":18,"recordedAt":"2026-05-05T10:15:00Z"}'
+```
+
+Response `204 No Content`.
+
+Validation rules:
+- `lat` ∈ [-90, 90], `lng` ∈ [-180, 180]
+- `accuracyMeters` ≥ 0
+- `recordedAt` must be within the last 24 h and at most 60 s in the future
+
+The server keeps the last 5 location pings per member as a trail (`recentHistory`).
+
+---
+
+### `GET /api/groups/{groupId}/locations?sinceVersion=N` — Poll locations
+
+```
+curl "http://localhost:7071/api/groups/{groupId}/locations"
+```
+
+Response `200 OK`:
+```json
+{
+  "groupId": "...",
+  "version": 5,
+  "members": [
+    {
+      "memberId": "...",
+      "displayName": "Thomas",
+      "currentLocation": {
+        "lat": 49.0128,
+        "lng": 8.4416,
+        "accuracyMeters": 18,
+        "recordedAt": "2026-05-05T10:15:00Z"
+      },
+      "recentHistory": [
+        { "lat": 49.0120, "lng": 8.4410, "accuracyMeters": 20, "recordedAt": "..." }
+      ]
+    }
+  ]
+}
+```
+
+Pass `?sinceVersion=5` to get `304 Not Modified` when nothing has changed — the client should store the last received `version` and use it on every subsequent poll.
+
+---
+
+## Notes
+
+- No auth on `GET /locations` in V1 — anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.
+- `inviteCode` format: 8 Crockford-Base32 characters in `XXXX-XXXX` form (no ambiguous I/L/O/U).
+- Production deployment (Bicep, pipelines, DefaultAzureCredential RBAC) is out of scope for V1.

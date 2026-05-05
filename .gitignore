@@ -2,3 +2,32 @@ node_modules/
 .vscode/
 .DS_Store
 .github/copilot-instructions.md
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Azure Functions local secrets
+local.settings.json
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+
+# NuGet
+*.nupkg
+**/packages/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+*.trx
+*.coverage
