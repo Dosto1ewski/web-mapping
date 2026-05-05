@@ -1,5 +1,8 @@
 node_modules/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .DS_Store
 .github/copilot-instructions.md
 
@@ -11,6 +14,11 @@ node_modules/
 
 # Azure Functions local secrets
 local.settings.json
+
+# Azurite
+__azurite_db_blob__.json
+__azurite_db_blob_extent__.json
+__blobstorage__/*
 
 # Visual Studio / Rider
 .vs/

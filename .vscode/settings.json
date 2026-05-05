@@ -1,0 +1,6 @@
+{
+  "azureFunctions.projectSubpath": "standortBackend/src/Standort.Functions",
+  "azureFunctions.deploySubpath": "standortBackend/src/Standort.Functions/bin/Release/net9.0/publish",
+  "azureFunctions.scmDoBuildDuringDeployment": true,
+  "azureFunctions.preDeployTask": "publish (functions)"
+}

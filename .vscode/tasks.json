@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build (backend)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "Standort.sln",
+        "--no-restore",
+        "-v",
+        "minimal"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/standortBackend"
+      },
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "func: host start",
+      "type": "process",
+      "command": "func",
+      "args": [
+        "host",
+        "start",
+        "--port",
+        "7071"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/standortBackend/src/Standort.Functions"
+      },
+      "isBackground": true,
+      "problemMatcher": "$func-dotnet-watch"
+    },
+    {
+      "label": "publish (functions)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "standortBackend/src/Standort.Functions/Standort.Functions.csproj",
+        "--configuration",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

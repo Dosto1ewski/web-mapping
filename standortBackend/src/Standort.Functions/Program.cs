@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Standort.Application.DTOs;
 using Standort.Application.Interfaces;
@@ -63,11 +64,28 @@ builder.Services.AddSingleton<IValidator<UpdateLocationRequest>, UpdateLocationR
 
 var host = builder.Build();
 
-// Ensure Cosmos database + containers exist (local-emulator-friendly bootstrap).
-using (var scope = host.Services.CreateScope())
+// Ensure Cosmos database + containers exist without blocking the Functions worker handshake.
+_ = Task.Run(async () =>
 {
+    using var scope = host.Services.CreateScope();
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CosmosBootstrapper");
     var bootstrapper = scope.ServiceProvider.GetRequiredService<CosmosBootstrapper>();
-    await bootstrapper.EnsureCreatedAsync(CancellationToken.None);
-}
+
+    try
+    {
+        using var bootstrapTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        await bootstrapper.EnsureCreatedAsync(bootstrapTimeout.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        logger.LogWarning("Cosmos bootstrap timed out. The Functions host will continue starting.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Cosmos bootstrap failed. The Functions host will continue starting.");
+    }
+});
 
 await host.RunAsync();

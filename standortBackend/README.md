@@ -21,6 +21,15 @@ Real-time location-sharing backend for a group-based webapp. V1 serves a polling
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
 - [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) running on `https://localhost:8081`
 
+#### Zum Beispiel via Docker Desktop
+`docker run --name cosmos-emulator -p 8081:8081 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 -p 10255:10255 -m 3g --cpus=2.0 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator`
+// Ports: 8081 ist der Haupt-Port für das SDK und den Explorer. Die restlichen Ports (10251-10255) werden für die interne Kommunikation der Partitionen benötigt.
+// Ressourcen: Der Emulator ist hungrig. -m 3g (3 GB RAM) und --cpus=2.0 sind das Minimum für eine flüssige Performance.
+
+https://localhost:8081/_explorer/index.html
+Zertifikat als .der runterladen und mit rechtsklick Zertifikat installieren für `Lokaler Computer`
+Alle Zertifikate in folgendem Speicher speichern, nicht Zertifikatsspeicher automatisch auswählen und dann dort Ordner "Vertrauenswürdige Stammzertifizierungsstellen" wählen.
+
 ### First-time setup
 
 1. Start the Cosmos DB Emulator.
@@ -36,6 +45,7 @@ Real-time location-sharing backend for a group-based webapp. V1 serves a polling
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "COSMOSDB_ACCOUNT_ENDPOINT": "https://localhost:8081",
     "COSMOSDB_ACCOUNT_KEY": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+    "CosmosDbConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
     "COSMOSDB_DATABASE_NAME": "standort-local",
     "COSMOSDB_GROUPS_CONTAINER": "groups",
     "COSMOSDB_INVITECODES_CONTAINER": "inviteCodes"
