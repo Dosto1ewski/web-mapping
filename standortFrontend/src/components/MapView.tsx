@@ -28,7 +28,7 @@ interface Props {
 
 export default function MapView({ members }: Props) {
   return (
-    <MapContainer center={[51.505, -0.09]} zoom={13} className="leaflet-map">
+    <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}

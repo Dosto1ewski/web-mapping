@@ -132,6 +132,36 @@ html,
   cursor: pointer;
 }
 
+.secondary-btn {
+  background: #475569 !important;
+}
+
+.secondary-btn:hover {
+  background: #334155 !important;
+}
+
+.manual-location-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.manual-location-form label {
+  display: grid;
+  gap: 4px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.manual-location-form input {
+  margin: 0;
+  background: white;
+}
+
 .leave-btn {
   background: #dc2626 !important;
 }
