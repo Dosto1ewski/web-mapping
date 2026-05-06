@@ -6,12 +6,12 @@ Real-time location-sharing backend for a group-based webapp. V1 serves a polling
 
 | Layer | Project |
 |---|---|
-| Domain entities & exceptions | `Standort.Domain` |
+| Domain entities and exceptions | `Standort.Domain` |
 | DTOs, interfaces, validators, services | `Standort.Application` |
 | Cosmos DB repositories, security helpers | `Standort.Infrastructure` |
 | Azure Functions HTTP endpoints | `Standort.Functions` |
 
-**Tech stack:** .NET 9 · Azure Functions Isolated Worker v4 · Azure Cosmos DB SDK 3.x · FluentValidation · xUnit + FluentAssertions + NSubstitute
+**Tech stack:** .NET 9, Azure Functions Isolated Worker v4, Azure Cosmos DB SDK 3.x, FluentValidation, xUnit + FluentAssertions + NSubstitute
 
 ## Local development
 
@@ -21,22 +21,30 @@ Real-time location-sharing backend for a group-based webapp. V1 serves a polling
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
 - [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) running on `https://localhost:8081`
 
-#### Zum Beispiel via Docker Desktop
-`docker run --name cosmos-emulator -p 8081:8081 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 -p 10255:10255 -m 3g --cpus=2.0 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator`
-// Ports: 8081 ist der Haupt-Port für das SDK und den Explorer. Die restlichen Ports (10251-10255) werden für die interne Kommunikation der Partitionen benötigt.
-// Ressourcen: Der Emulator ist hungrig. -m 3g (3 GB RAM) und --cpus=2.0 sind das Minimum für eine flüssige Performance.
+#### Example with Docker Desktop
 
+```powershell
+docker run --name cosmos-emulator -p 8081:8081 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 -p 10255:10255 -m 3g --cpus=2.0 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
+```
+
+Port `8081` is the main SDK and Explorer port. Ports `10251-10255` are used for internal partition communication. The emulator is resource hungry; `-m 3g` and `--cpus=2.0` are a practical minimum.
+
+Open the Emulator Explorer:
+
+```text
 https://localhost:8081/_explorer/index.html
-Zertifikat als .der runterladen und mit rechtsklick Zertifikat installieren für `Lokaler Computer`
-Alle Zertifikate in folgendem Speicher speichern, nicht Zertifikatsspeicher automatisch auswählen und dann dort Ordner "Vertrauenswürdige Stammzertifizierungsstellen" wählen.
+```
+
+Download the `.der` certificate and install it for `Local Computer`. Choose the certificate store manually and select `Trusted Root Certification Authorities`.
 
 ### First-time setup
 
 1. Start the Cosmos DB Emulator.
-2. Copy `local.settings.json.example` to `local.settings.json` inside `src/Standort.Functions/` (or create it — see template below). The file is gitignored.
-3. Run `func start` from `src/Standort.Functions/`. The app creates the database and containers on startup if they don't exist.
+2. Copy `local.settings.json.example` to `local.settings.json` inside `src/Standort.Functions/`, or create it from the template below. The file is gitignored.
+3. Run `func start` from `src/Standort.Functions/`. The app creates the database and containers on startup if they do not exist.
 
 **`local.settings.json` template:**
+
 ```json
 {
   "IsEncrypted": false,
@@ -59,7 +67,7 @@ Alle Zertifikate in folgendem Speicher speichern, nicht Zertifikatsspeicher auto
 
 ### Run tests
 
-```
+```powershell
 dotnet test
 ```
 
@@ -67,100 +75,106 @@ All 42 unit tests run without any external dependencies.
 
 ## API
 
-### Talend API Tester quick flow
+Use this order because later requests need values returned by earlier requests. The examples are written for Talend API Tester, but the same URLs and JSON bodies work with curl or Postman.
 
-Use this order because later requests need values returned by earlier requests.
+Base URL when running locally:
 
-Base URL:
 ```text
 http://localhost:7071/api
 ```
 
-#### 1. Create group
+### 1. Create group
 
-Method: `POST`
+Method and URL:
 
-URL:
 ```text
-http://localhost:7071/api/groups
+POST http://localhost:7071/api/groups
 ```
 
 Headers:
+
 ```text
 Content-Type: application/json
 ```
 
 Body:
+
 ```json
 {
-  "name": "Testgruppe",
+  "name": "Wandertour Samstag",
   "createdByDisplayName": "Antonin"
 }
 ```
 
-Copy `groupId`, `inviteCode`, `memberId`, and `memberToken` from the response.
+Response `201 Created`:
 
-Example Response:
 ```json
 {
-"groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
-"inviteCode": "K792-CM78",
-"memberId": "BQP8JT4W174YH13A",
-"memberToken": "SUUWxlMD6MZR9NP1O1LTmT30th3Y8Y5EYkJh-D-V6Zg",
-"displayName": "Antonin"
+  "groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
+  "inviteCode": "K792-CM78",
+  "memberId": "BQP8JT4W174YH13A",
+  "memberToken": "SUUWxlMD6MZR9NP1O1LTmT30th3Y8Y5EYkJh-D-V6Zg",
+  "displayName": "Antonin"
 }
 ```
 
-#### 2. Join group
+Copy `groupId`, `inviteCode`, `memberId`, and `memberToken` from the response. The `memberToken` is shown once and is required for location updates.
 
-Method: `POST`
+### 2. Join group
 
-URL:
+Method and URL:
+
 ```text
-http://localhost:7071/api/groups/join
+POST http://localhost:7071/api/groups/join
 ```
 
 Headers:
+
 ```text
 Content-Type: application/json
 ```
 
 Body:
+
 ```json
 {
-  "inviteCode": "ABCD-1234",
+  "inviteCode": "K792-CM78",
   "displayName": "Max"
 }
 ```
 
-Replace `ABCD-1234` with the `inviteCode` from step 1. Copy the returned `memberId` and `memberToken` if you want to update this member's location.
+Replace `K792-CM78` with the `inviteCode` returned by step 1.
 
-Example Response:
+Response `200 OK`:
+
 ```json
 {
-"groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
-"memberId": "P3SWDAQ45B5EH6TR",
-"memberToken": "v5V93FJYU7QGEwh5Lbi5qC3BzRIecuWZp5wZhSYvbuY",
-"displayName": "Max"
+  "groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
+  "memberId": "P3SWDAQ45B5EH6TR",
+  "memberToken": "v5V93FJYU7QGEwh5Lbi5qC3BzRIecuWZp5wZhSYvbuY",
+  "displayName": "Max"
 }
 ```
 
-#### 3. Update location
+Copy this member's `memberId` and `memberToken` if you want to update this member's location. Rejoining with an existing display name rotates the token ("newest session wins"). The old token returns `401` on subsequent location updates.
 
-Method: `PUT`
+### 3. Update location
 
-URL:
+Method and URL:
+
 ```text
-http://localhost:7071/api/groups/{groupId}/members/{memberId}/location
+PUT http://localhost:7071/api/groups/{groupId}/members/{memberId}/location
 ```
 
 Headers:
+
 ```text
 Content-Type: application/json
 Authorization: Bearer {memberToken}
 ```
 
 Body:
+
 ```json
 {
   "lat": 52.520008,
@@ -172,126 +186,65 @@ Body:
 
 Replace `{groupId}`, `{memberId}`, and `{memberToken}` with values from a create/join response. `recordedAt` must be within the last 24 hours and at most 60 seconds in the future, so use the current UTC time when testing.
 
-Expected response: `204 No Content`.
-
-#### 4. Get group locations
-
-Method: `GET`
-
-URL:
-```text
-http://localhost:7071/api/groups/{groupId}/locations
-```
-
-No body is required.
-
-Optional polling URL:
-```text
-http://localhost:7071/api/groups/{groupId}/locations?sinceVersion=1
-```
-
-If nothing changed since that version, the API returns `304 Not Modified`.
-
----
-
-### `POST /api/groups` — Create group
-
-```
-curl -X POST http://localhost:7071/api/groups \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Wandertour Samstag","createdByDisplayName":"Antonin"}'
-```
-
-Response `201 Created`:
-```json
-{
-  "groupId": "...",
-  "inviteCode": "7H4K-P9QD",
-  "memberId": "...",
-  "memberToken": "<save this — shown once>",
-  "displayName": "Antonin"
-}
-```
-
----
-
-### `POST /api/groups/join` — Join group
-
-```
-curl -X POST http://localhost:7071/api/groups/join \
-  -H "Content-Type: application/json" \
-  -d '{"inviteCode":"7H4K-P9QD","displayName":"Mira"}'
-```
-
-Response `200 OK`:
-```json
-{
-  "groupId": "...",
-  "memberId": "...",
-  "memberToken": "<save this>",
-  "displayName": "Mira"
-}
-```
-
-Rejoining with an existing display name rotates the token ("newest session wins"). The old token returns `401` on subsequent location updates.
-
----
-
-### `PUT /api/groups/{groupId}/members/{memberId}/location` — Update location
-
-```
-curl -X PUT http://localhost:7071/api/groups/{groupId}/members/{memberId}/location \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <memberToken>" \
-  -d '{"lat":49.0128,"lng":8.4416,"accuracyMeters":18,"recordedAt":"2026-05-05T10:15:00Z"}'
-```
-
 Response `204 No Content`.
 
 Validation rules:
-- `lat` ∈ [-90, 90], `lng` ∈ [-180, 180]
-- `accuracyMeters` ≥ 0
+
+- `lat` in `[-90, 90]`, `lng` in `[-180, 180]`
+- `accuracyMeters` must be `>= 0`
 - `recordedAt` must be within the last 24 h and at most 60 s in the future
 
 The server keeps the last 5 location pings per member as a trail (`recentHistory`).
 
----
+### 4. Get group locations
 
-### `GET /api/groups/{groupId}/locations?sinceVersion=N` — Poll locations
+Method and URL:
 
+```text
+GET http://localhost:7071/api/groups/{groupId}/locations
 ```
-curl "http://localhost:7071/api/groups/{groupId}/locations"
-```
+
+No body is required.
 
 Response `200 OK`:
+
 ```json
 {
-  "groupId": "...",
+  "groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
   "version": 5,
   "members": [
     {
-      "memberId": "...",
-      "displayName": "Thomas",
+      "memberId": "P3SWDAQ45B5EH6TR",
+      "displayName": "Max",
       "currentLocation": {
-        "lat": 49.0128,
-        "lng": 8.4416,
-        "accuracyMeters": 18,
-        "recordedAt": "2026-05-05T10:15:00Z"
+        "lat": 52.520008,
+        "lng": 13.404954,
+        "accuracyMeters": 12.5,
+        "recordedAt": "2026-05-06T10:00:00Z"
       },
       "recentHistory": [
-        { "lat": 49.0120, "lng": 8.4410, "accuracyMeters": 20, "recordedAt": "..." }
+        {
+          "lat": 52.520008,
+          "lng": 13.404954,
+          "accuracyMeters": 12.5,
+          "recordedAt": "2026-05-06T10:00:00Z"
+        }
       ]
     }
   ]
 }
 ```
 
-Pass `?sinceVersion=5` to get `304 Not Modified` when nothing has changed — the client should store the last received `version` and use it on every subsequent poll.
+Optional polling URL:
 
----
+```text
+GET http://localhost:7071/api/groups/{groupId}/locations?sinceVersion=5
+```
+
+Pass the last received `version` as `sinceVersion`. If nothing changed since that version, the API returns `304 Not Modified`.
 
 ## Notes
 
-- No auth on `GET /locations` in V1 — anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.
-- `inviteCode` format: 8 Crockford-Base32 characters in `XXXX-XXXX` form (no ambiguous I/L/O/U).
-- Production deployment (Bicep, pipelines, DefaultAzureCredential RBAC) is out of scope for V1.
+- No auth on `GET /locations` in V1: anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.
+- `inviteCode` format: 8 Crockford-Base32 characters in `XXXX-XXXX` form, without ambiguous I/L/O/U characters.
+- Production deployment with Bicep, pipelines, and DefaultAzureCredential RBAC is out of scope for V1.
