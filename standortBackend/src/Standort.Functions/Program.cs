@@ -64,10 +64,9 @@ builder.Services.AddSingleton<IValidator<UpdateLocationRequest>, UpdateLocationR
 
 var host = builder.Build();
 
-// Ensure Cosmos database + containers exist without blocking the Functions worker handshake.
-_ = Task.Run(async () =>
+// Ensure Cosmos database + containers exist before the first request can write to them.
+using (var scope = host.Services.CreateScope())
 {
-    using var scope = host.Services.CreateScope();
     var logger = scope.ServiceProvider
         .GetRequiredService<ILoggerFactory>()
         .CreateLogger("CosmosBootstrapper");
@@ -76,7 +75,18 @@ _ = Task.Run(async () =>
     try
     {
         using var bootstrapTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        await bootstrapper.EnsureCreatedAsync(bootstrapTimeout.Token);
+        var bootstrapTask = bootstrapper.EnsureCreatedAsync(bootstrapTimeout.Token);
+        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(15), CancellationToken.None);
+
+        if (await Task.WhenAny(bootstrapTask, timeoutTask) == timeoutTask)
+        {
+            bootstrapTimeout.Cancel();
+            logger.LogWarning("Cosmos bootstrap timed out. The Functions host will continue starting.");
+        }
+        else
+        {
+            await bootstrapTask;
+        }
     }
     catch (OperationCanceledException)
     {
@@ -86,6 +96,6 @@ _ = Task.Run(async () =>
     {
         logger.LogWarning(ex, "Cosmos bootstrap failed. The Functions host will continue starting.");
     }
-});
+}
 
 await host.RunAsync();

@@ -18,6 +18,7 @@ public static class CosmosClientFactory
         var clientOptions = new CosmosClientOptions
         {
             ConnectionMode = ConnectionMode.Gateway, // safest for emulator + corporate networks
+            RequestTimeout = TimeSpan.FromSeconds(10),
             UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -27,6 +28,7 @@ public static class CosmosClientFactory
 
         if (!string.IsNullOrWhiteSpace(options.AccountKey))
         {
+            clientOptions.LimitToEndpoint = true;
             return new CosmosClient(options.AccountEndpoint, options.AccountKey, clientOptions);
         }
 

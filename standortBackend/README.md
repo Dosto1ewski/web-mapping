@@ -67,6 +67,133 @@ All 42 unit tests run without any external dependencies.
 
 ## API
 
+### Talend API Tester quick flow
+
+Use this order because later requests need values returned by earlier requests.
+
+Base URL:
+```text
+http://localhost:7071/api
+```
+
+#### 1. Create group
+
+Method: `POST`
+
+URL:
+```text
+http://localhost:7071/api/groups
+```
+
+Headers:
+```text
+Content-Type: application/json
+```
+
+Body:
+```json
+{
+  "name": "Testgruppe",
+  "createdByDisplayName": "Antonin"
+}
+```
+
+Copy `groupId`, `inviteCode`, `memberId`, and `memberToken` from the response.
+
+Example Response:
+```json
+{
+"groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
+"inviteCode": "K792-CM78",
+"memberId": "BQP8JT4W174YH13A",
+"memberToken": "SUUWxlMD6MZR9NP1O1LTmT30th3Y8Y5EYkJh-D-V6Zg",
+"displayName": "Antonin"
+}
+```
+
+#### 2. Join group
+
+Method: `POST`
+
+URL:
+```text
+http://localhost:7071/api/groups/join
+```
+
+Headers:
+```text
+Content-Type: application/json
+```
+
+Body:
+```json
+{
+  "inviteCode": "ABCD-1234",
+  "displayName": "Max"
+}
+```
+
+Replace `ABCD-1234` with the `inviteCode` from step 1. Copy the returned `memberId` and `memberToken` if you want to update this member's location.
+
+Example Response:
+```json
+{
+"groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
+"memberId": "P3SWDAQ45B5EH6TR",
+"memberToken": "v5V93FJYU7QGEwh5Lbi5qC3BzRIecuWZp5wZhSYvbuY",
+"displayName": "Max"
+}
+```
+
+#### 3. Update location
+
+Method: `PUT`
+
+URL:
+```text
+http://localhost:7071/api/groups/{groupId}/members/{memberId}/location
+```
+
+Headers:
+```text
+Content-Type: application/json
+Authorization: Bearer {memberToken}
+```
+
+Body:
+```json
+{
+  "lat": 52.520008,
+  "lng": 13.404954,
+  "accuracyMeters": 12.5,
+  "recordedAt": "2026-05-06T10:00:00Z"
+}
+```
+
+Replace `{groupId}`, `{memberId}`, and `{memberToken}` with values from a create/join response. `recordedAt` must be within the last 24 hours and at most 60 seconds in the future, so use the current UTC time when testing.
+
+Expected response: `204 No Content`.
+
+#### 4. Get group locations
+
+Method: `GET`
+
+URL:
+```text
+http://localhost:7071/api/groups/{groupId}/locations
+```
+
+No body is required.
+
+Optional polling URL:
+```text
+http://localhost:7071/api/groups/{groupId}/locations?sinceVersion=1
+```
+
+If nothing changed since that version, the API returns `304 Not Modified`.
+
+---
+
 ### `POST /api/groups` — Create group
 
 ```
