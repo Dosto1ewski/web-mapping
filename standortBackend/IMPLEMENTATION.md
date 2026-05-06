@@ -232,7 +232,6 @@ dotnet test
 ### Cloud deployment (V2-infra)
 
 - [ ] **Bicep templates** — Cosmos DB account (serverless SKU), Function App (Consumption plan), App Service Plan, Storage Account, Key Vault for secrets.
-- [ ] **GitHub Actions pipeline** — build → test → `az deployment` on merge to `main`.
 - [ ] **Managed Identity wiring** — remove `AccountKey` from production config; grant Function's identity `Cosmos DB Built-in Data Contributor` on the account.
 - [ ] **Azure Static Web Apps integration** — configure SWA to proxy `/api/*` to the Function App, or migrate to SWA Managed Functions if moving to that model.
 
