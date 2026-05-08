@@ -1,3 +1,28 @@
+# Standort Frontend
+
+## Deploying to Azure Static Web Apps
+
+Run these commands from the `standortFrontend` directory:
+
+```powershell
+# 1. Build
+npm run build
+
+# 2. Fetch the deploy token
+$token = az deployment group show `
+  --resource-group rg-standort-prod `
+  --name deploy-standort-prod `
+  --query properties.outputs.staticWebAppDeployToken.value `
+  -o tsv
+
+# 3. Deploy
+npx @azure/static-web-apps-cli deploy ./dist --deployment-token $token --env Production
+```
+
+The site is live at the "Default domain" shown in the Azure Portal under **stapp-standort-prod**.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
