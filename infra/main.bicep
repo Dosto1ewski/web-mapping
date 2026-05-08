@@ -75,7 +75,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
     }
-    enableFreeTier: false  // set to true if this is your only free-tier account
+    enableFreeTier: true
     capabilities: [
       { name: 'EnableServerless' }  // serverless = pay-per-request, ideal for low traffic
     ]
@@ -203,7 +203,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 //   npx @azure/static-web-apps-cli deploy ./dist --deployment-token <token>
 resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
   name: staticWebAppName
-  location: location  // not all regions support SWA — westeurope or eastus2 recommended
+  location: 'eastus2'  // SWA only available in: westus2, centralus, eastus2, westeurope, eastasia
   sku: {
     name: 'Free'      // Free tier: 100 GB bandwidth, custom domains included
     tier: 'Free'
@@ -217,7 +217,7 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
 }
 
 // ─── Outputs ──────────────────────────────────────────────────────────────────
-output functionAppUrl string     = 'https://${functionApp.properties.defaultHostName}'
-output staticWebAppUrl string    = 'https://${staticWebApp.properties.defaultHostname}'
-output cosmosEndpoint string     = cosmosAccount.properties.documentEndpoint
-output staticWebAppDeployToken string = staticWebApp.listSecrets().properties.apiKey
+output functionAppUrl string             = 'https://${functionApp.properties.defaultHostName}'
+output staticWebAppUrl string            = 'https://${staticWebApp.properties.defaultHostname}'
+output cosmosEndpoint string             = cosmosAccount.properties.documentEndpoint
+output staticWebAppDeployToken string    = staticWebApp.listSecrets().properties.apiKey

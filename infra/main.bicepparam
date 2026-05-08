@@ -1,6 +1,6 @@
 using './main.bicep'
 
 param environment = 'prod'
-param location    = 'westeurope'
+param location    = 'northeurope'
 param workload    = 'standort'
 param cosmosDbName = 'standort'

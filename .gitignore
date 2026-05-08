@@ -11,6 +11,10 @@ node_modules/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+## Function deployment
+*.zip
+publish/
+az
 
 # Azure Functions local secrets
 local.settings.json
