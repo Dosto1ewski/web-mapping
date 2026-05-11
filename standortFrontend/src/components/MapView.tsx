@@ -30,9 +30,9 @@ export default function MapView({ members }: Props) {
   return (
     <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
-        attribution="&copy; OpenStreetMap contributors"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
       />
       <FitBounds members={members} />
       {members.map((member) => {
