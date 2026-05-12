@@ -227,6 +227,22 @@ dotnet test
 
 ---
 
+## Recently implemented
+
+### Marker feature (V1)
+
+Members can create, read, and delete fixed markers (points of interest) within a group:
+
+- **Create marker** `POST /api/groups/{groupId}/members/{memberId}/markers` — requires member token; creates a named location with optional color and notes
+- **Fetch markers** `GET /api/groups/{groupId}/markers` — no auth required; returns all markers for a group
+- **Delete marker** `DELETE /api/groups/{groupId}/members/{memberId}/markers/{markerId}` — requires member token; any member can delete any marker (no per-marker ownership in V1)
+
+Markers are persisted in a separate Cosmos DB container (`markers`) with `markerId` as the unique identifier and `groupId` as the partition key. Each marker includes `createdByMemberId` and `createdAt` for audit purposes.
+
+Future enhancements: per-marker ownership checks (delete only own marker), marker icons for differentiation.
+
+---
+
 ## Future tasks
 
 
@@ -240,9 +256,15 @@ dotnet test
 - [ ] **Audit log** — append-only log of token rotations and joins, stored as separate Cosmos documents, for debugging "who took my session" issues.
 
 ### Features
-- [ ] **Location sharing only when set to Auto share** — Share location automatically only when the marker is marked for Auto-Marker.
-- [ ] **Navigation / routing** — backend stores a shared destination; frontend shows route and ETA.
+- [ ] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
+  Active session per username.
+- [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers.
+- [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members.
 
+### Design
+- [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
+- [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
+- [ ] **Color change for historic Locations of users** Make tracking an user easier by color-coding their historic path
 ### Real-time
 
 - [ ] **SignalR push** — replace polling with Azure SignalR Service. The `PUT /location` write path already has a clear commit point; a SignalR hub notification can be emitted there. Polling endpoint stays as fallback.
