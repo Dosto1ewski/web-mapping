@@ -5,6 +5,8 @@ import type {
   JoinGroupResponse,
   UpdateLocationRequest,
   GroupLocationsResponse,
+  CreateMarkerRequest,
+  MarkerDto,
   ApiError,
 } from './types';
 import { API_BASE } from './constants';
@@ -80,4 +82,43 @@ export async function getLocations(
   const res = await fetch(`${API_BASE}/api/groups/${groupId}/locations${qs}`);
   if (res.status === 304) return null;
   return handleResponse<GroupLocationsResponse>(res);
+}
+
+export async function createMarker(
+  groupId: string,
+  memberId: string,
+  token: string,
+  req: CreateMarkerRequest,
+): Promise<MarkerDto> {
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/markers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<MarkerDto>(res);
+}
+
+export async function getMarkers(groupId: string): Promise<MarkerDto[]> {
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/markers`);
+  return handleResponse<MarkerDto[]>(res);
+}
+
+export async function deleteMarker(
+  groupId: string,
+  memberId: string,
+  token: string,
+  markerId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/api/groups/${groupId}/members/${memberId}/markers/${markerId}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (res.status === 204) return;
+  let body: ApiError;
+  try {
+    body = await res.json();
+  } catch {
+    body = { error: 'unknown', message: `HTTP ${res.status}` };
+  }
+  throw new ApiException(res.status, body);
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export interface Coords {
   latitude: number;
@@ -6,38 +6,50 @@ export interface Coords {
   accuracy: number;
 }
 
-export function useGeolocation(onPosition: (coords: Coords) => void) {
+export function useGeolocation(onPosition: (coords: Coords) => void, autoShareIntervalMs = 5000) {
   const [autoShare, setAutoShareState] = useState(false);
-  const watchIdRef = useRef<number | null>(null);
+  const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoShareRef = useRef(false);
+  const onPositionRef = useRef(onPosition);
+  useEffect(() => {
+    onPositionRef.current = onPosition;
+  }, [onPosition]);
 
   const getCurrent = useCallback(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => onPosition(pos.coords),
+      (pos) => onPositionRef.current(pos.coords),
       () => {},
       { enableHighAccuracy: true },
     );
-  }, [onPosition]);
+  }, []);
+
+  const startInterval = useCallback(() => {
+    if (intervalIdRef.current != null) clearInterval(intervalIdRef.current);
+    if (!navigator.geolocation) return;
+    getCurrent();
+    intervalIdRef.current = setInterval(getCurrent, autoShareIntervalMs);
+  }, [getCurrent, autoShareIntervalMs]);
+
+  // Restart when interval changes while auto-share is active
+  useEffect(() => {
+    if (autoShareRef.current) startInterval();
+  }, [startInterval]);
 
   const setAutoShare = useCallback(
     (enabled: boolean) => {
+      autoShareRef.current = enabled;
+      setAutoShareState(enabled);
       if (enabled) {
-        if (!navigator.geolocation) return;
-        watchIdRef.current = navigator.geolocation.watchPosition(
-          (pos) => onPosition(pos.coords),
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 5000 },
-        );
-        setAutoShareState(true);
+        startInterval();
       } else {
-        if (watchIdRef.current != null) {
-          navigator.geolocation.clearWatch(watchIdRef.current);
-          watchIdRef.current = null;
+        if (intervalIdRef.current != null) {
+          clearInterval(intervalIdRef.current);
+          intervalIdRef.current = null;
         }
-        setAutoShareState(false);
       }
     },
-    [onPosition],
+    [startInterval],
   );
 
   return { autoShare, setAutoShare, getCurrent };

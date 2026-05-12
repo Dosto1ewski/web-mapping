@@ -1,0 +1,34 @@
+import { useState, useEffect } from 'react';
+
+export interface Settings {
+  locationFetchSec: number;
+  markerFetchSec: number;
+  locationUpdateSec: number;
+}
+
+const DEFAULTS: Settings = {
+  locationFetchSec: 10,
+  markerFetchSec: 15,
+  locationUpdateSec: 10,
+};
+
+const STORAGE_KEY = 'standort_settings';
+
+export function useSettings() {
+  const [settings, setSettingsState] = useState<Settings>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) return { ...DEFAULTS, ...JSON.parse(stored) };
+    } catch {}
+    return DEFAULTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
+
+  const updateSettings = (patch: Partial<Settings>) =>
+    setSettingsState((s) => ({ ...s, ...patch }));
+
+  return { settings, updateSettings };
+}

@@ -55,3 +55,22 @@ export interface ApiError {
   message: string;
   fields?: { field: string; message: string }[];
 }
+
+export interface CreateMarkerRequest {
+  name: string;
+  lat: number;
+  lng: number;
+  color?: string | null;
+  notes?: string | null;
+}
+
+export interface MarkerDto {
+  markerId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  color: string | null;
+  notes: string | null;
+  createdByMemberId: string;
+  createdAt: string;
+}

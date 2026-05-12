@@ -9,9 +9,20 @@ interface Props {
   inviteCode: string | null;
   onLeave: () => void;
   onStatus: (msg: string) => void;
+  placingMarker: boolean;
+  onTogglePlacingMarker: () => void;
+  locationUpdateIntervalMs: number;
 }
 
-export default function MemberControls({ session, inviteCode, onLeave, onStatus }: Props) {
+export default function MemberControls({
+  session,
+  inviteCode,
+  onLeave,
+  onStatus,
+  placingMarker,
+  onTogglePlacingMarker,
+  locationUpdateIntervalMs,
+}: Props) {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualLat, setManualLat] = useState('49.0069');
   const [manualLng, setManualLng] = useState('8.4037');
@@ -38,7 +49,10 @@ export default function MemberControls({ session, inviteCode, onLeave, onStatus 
     [session, onStatus],
   );
 
-  const { autoShare, setAutoShare, getCurrent } = useGeolocation(sendLocation);
+  const { autoShare, setAutoShare, getCurrent } = useGeolocation(
+    sendLocation,
+    locationUpdateIntervalMs,
+  );
 
   const inviteLink = inviteCode
     ? `${location.origin}/?invite=${inviteCode}`
@@ -90,6 +104,13 @@ export default function MemberControls({ session, inviteCode, onLeave, onStatus 
           Auto
         </label>
       </div>
+      <button
+        type="button"
+        className={`secondary-btn${placingMarker ? ' placing-active' : ''}`}
+        onClick={onTogglePlacingMarker}
+      >
+        {placingMarker ? 'Abbrechen' : '📍 Marker setzen'}
+      </button>
       <button type="button" className="secondary-btn" onClick={() => setManualOpen((v) => !v)}>
         Manuell setzen
       </button>

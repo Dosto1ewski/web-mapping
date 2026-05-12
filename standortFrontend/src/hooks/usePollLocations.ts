@@ -2,9 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLocations } from '../api/client';
 import type { MemberLocationDto } from '../api/types';
 
-const POLL_INTERVAL_MS = 5000;
-
-export function usePollLocations(groupId: string | null) {
+export function usePollLocations(groupId: string | null, intervalMs = 5000) {
   const [members, setMembers] = useState<MemberLocationDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef<number | undefined>(undefined);
@@ -30,9 +28,9 @@ export function usePollLocations(groupId: string | null) {
       return;
     }
     poll();
-    const id = setInterval(poll, POLL_INTERVAL_MS);
+    const id = setInterval(poll, intervalMs);
     return () => clearInterval(id);
-  }, [groupId, poll]);
+  }, [groupId, poll, intervalMs]);
 
   return { members, error };
 }

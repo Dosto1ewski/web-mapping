@@ -1,23 +1,43 @@
 import { useState, useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { useSession } from './state/session';
+import { useSettings } from './state/settings';
 import { usePollLocations } from './hooks/usePollLocations';
+import { usePollMarkers } from './hooks/usePollMarkers';
+import { createMarker, deleteMarker, ApiException } from './api/client';
 import Lobby from './components/Lobby';
 import MapView from './components/MapView';
 import MemberControls from './components/MemberControls';
+import SettingsPanel from './components/SettingsPanel';
+import MarkerDialog from './components/MarkerDialog';
 import type { Session } from './state/session';
 
 export default function App() {
   const { session, setSession, clearSession } = useSession();
+  const { settings, updateSettings } = useSettings();
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [status, setStatus] = useState('');
-  const { members, error } = usePollLocations(session?.groupId ?? null);
+  const [placingMarker, setPlacingMarker] = useState(false);
+  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  const { members, error: locError } = usePollLocations(
+    session?.groupId ?? null,
+    settings.locationFetchSec * 1000,
+  );
+  const { markers, error: markerError, refresh: refreshMarkers } = usePollMarkers(
+    session?.groupId ?? null,
+    settings.markerFetchSec * 1000,
+  );
 
   const defaultInviteCode = new URL(location.href).searchParams.get('invite') ?? undefined;
 
   useEffect(() => {
-    if (error) setStatus(error);
-  }, [error]);
+    if (locError) setStatus(locError);
+  }, [locError]);
+
+  useEffect(() => {
+    if (markerError) setStatus(markerError);
+  }, [markerError]);
 
   function handleJoined(s: Session, code?: string) {
     setSession(s);
@@ -28,7 +48,41 @@ export default function App() {
   function handleLeave() {
     clearSession();
     setInviteCode(null);
+    setPlacingMarker(false);
+    setPendingCoords(null);
     setStatus('Gruppe verlassen.');
+  }
+
+  function handleMapClick(lat: number, lng: number) {
+    setPlacingMarker(false);
+    setPendingCoords({ lat, lng });
+  }
+
+  async function handleCreateMarker(name: string, color: string, notes: string | null) {
+    if (!session || !pendingCoords) return;
+    await createMarker(session.groupId, session.memberId, session.memberToken, {
+      name,
+      lat: pendingCoords.lat,
+      lng: pendingCoords.lng,
+      color,
+      notes,
+    });
+    setPendingCoords(null);
+    refreshMarkers();
+  }
+
+  async function handleDeleteMarker(markerId: string) {
+    if (!session) return;
+    try {
+      await deleteMarker(session.groupId, session.memberId, session.memberToken, markerId);
+      refreshMarkers();
+    } catch (err) {
+      if (err instanceof ApiException && err.status === 401) {
+        setStatus('Token abgelaufen — bitte neu beitreten.');
+      } else {
+        setStatus(err instanceof Error ? err.message : 'Löschen fehlgeschlagen.');
+      }
+    }
   }
 
   return (
@@ -42,11 +96,33 @@ export default function App() {
             inviteCode={inviteCode}
             onLeave={handleLeave}
             onStatus={setStatus}
+            placingMarker={placingMarker}
+            onTogglePlacingMarker={() => setPlacingMarker((v) => !v)}
+            locationUpdateIntervalMs={settings.locationUpdateSec * 1000}
           />
         )}
         {status && <p className="status">{status}</p>}
       </div>
-      <MapView members={members} />
+
+      <SettingsPanel settings={settings} onUpdate={updateSettings} />
+
+      <MapView
+        members={members}
+        markers={markers}
+        session={session ?? null}
+        placingMarker={placingMarker}
+        onMapClick={handleMapClick}
+        onDeleteMarker={handleDeleteMarker}
+      />
+
+      {pendingCoords && (
+        <MarkerDialog
+          lat={pendingCoords.lat}
+          lng={pendingCoords.lng}
+          onConfirm={handleCreateMarker}
+          onCancel={() => setPendingCoords(null)}
+        />
+      )}
     </div>
   );
 }
