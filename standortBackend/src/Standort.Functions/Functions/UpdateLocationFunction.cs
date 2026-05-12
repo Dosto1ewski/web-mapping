@@ -2,7 +2,6 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Net.Http.Headers;
 using Standort.Application.DTOs;
 using Standort.Application.Services;
 using Standort.Domain.DomainExceptions;
@@ -30,7 +29,7 @@ public sealed class UpdateLocationFunction
         string memberId,
         CancellationToken ct)
     {
-        var token = ExtractBearerToken(req);
+        var token = BearerToken.Extract(req);
         if (token is null)
         {
             return ErrorResponses.Unauthorized("Authorization header missing or malformed.");
@@ -79,19 +78,4 @@ public sealed class UpdateLocationFunction
         }
     }
 
-    private static string? ExtractBearerToken(HttpRequest req)
-    {
-        if (!req.Headers.TryGetValue(HeaderNames.Authorization, out var values))
-        {
-            return null;
-        }
-        var raw = values.ToString();
-        const string prefix = "Bearer ";
-        if (!raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-        var token = raw[prefix.Length..].Trim();
-        return string.IsNullOrEmpty(token) ? null : token;
-    }
 }

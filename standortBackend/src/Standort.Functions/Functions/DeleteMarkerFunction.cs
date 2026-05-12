@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Net.Http.Headers;
 using Standort.Application.Services;
 using Standort.Domain.DomainExceptions;
 using Standort.Functions.Http;
@@ -27,7 +26,7 @@ public sealed class DeleteMarkerFunction
         string markerId,
         CancellationToken ct)
     {
-        var token = ExtractBearerToken(req);
+        var token = BearerToken.Extract(req);
         if (token is null)
             return ErrorResponses.Unauthorized("Authorization header missing or malformed.");
 
@@ -54,15 +53,4 @@ public sealed class DeleteMarkerFunction
         }
     }
 
-    private static string? ExtractBearerToken(HttpRequest req)
-    {
-        if (!req.Headers.TryGetValue(HeaderNames.Authorization, out var values))
-            return null;
-        var raw = values.ToString();
-        const string prefix = "Bearer ";
-        if (!raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return null;
-        var token = raw[prefix.Length..].Trim();
-        return string.IsNullOrEmpty(token) ? null : token;
-    }
 }
