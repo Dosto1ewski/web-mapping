@@ -7,6 +7,7 @@ import type {
   GroupLocationsResponse,
   ApiError,
 } from './types';
+import { API_BASE } from './constants';
 
 export class ApiException extends Error {
   readonly status: number;
@@ -30,7 +31,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function createGroup(req: CreateGroupRequest): Promise<CreateGroupResponse> {
-  const res = await fetch('/api/groups', {
+  const res = await fetch(`${API_BASE}/api/groups`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -39,7 +40,7 @@ export async function createGroup(req: CreateGroupRequest): Promise<CreateGroupR
 }
 
 export async function joinGroup(req: JoinGroupRequest): Promise<JoinGroupResponse> {
-  const res = await fetch('/api/groups/join', {
+  const res = await fetch(`${API_BASE}/api/groups/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -53,7 +54,7 @@ export async function updateLocation(
   token: string,
   req: UpdateLocationRequest,
 ): Promise<void> {
-  const res = await fetch(`/api/groups/${groupId}/members/${memberId}/location`, {
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/location`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ export async function getLocations(
   sinceVersion?: number,
 ): Promise<GroupLocationsResponse | null> {
   const qs = sinceVersion != null ? `?sinceVersion=${sinceVersion}` : '';
-  const res = await fetch(`/api/groups/${groupId}/locations${qs}`);
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/locations${qs}`);
   if (res.status === 304) return null;
   return handleResponse<GroupLocationsResponse>(res);
 }

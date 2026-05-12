@@ -189,8 +189,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
       ]
       cors: {
-        // After deploying the Static Web App, replace * with its URL
-        allowedOrigins: ['https://*.azurestaticapps.net']
+        allowedOrigins: [
+          'https://*.azurestaticapps.net'
+          'https://standort.fahn.ing'
+        ]
         supportCredentials: false
       }
     }
