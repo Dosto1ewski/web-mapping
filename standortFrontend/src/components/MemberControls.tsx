@@ -1,5 +1,4 @@
-import { useCallback, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useCallback } from 'react';
 import { updateLocation, ApiException } from '../api/client';
 import { useGeolocation } from '../hooks/useGeolocation';
 import type { Session } from '../state/session';
@@ -13,6 +12,9 @@ interface Props {
   placingMarker: boolean;
   onTogglePlacingMarker: () => void;
   locationUpdateIntervalMs: number;
+  placingLocation: boolean;
+  onTogglePlacingLocation: () => void;
+  locationDragPos: { lat: number; lng: number };
 }
 
 export default function MemberControls({
@@ -24,11 +26,10 @@ export default function MemberControls({
   placingMarker,
   onTogglePlacingMarker,
   locationUpdateIntervalMs,
+  placingLocation,
+  onTogglePlacingLocation,
+  locationDragPos,
 }: Props) {
-  const [manualOpen, setManualOpen] = useState(false);
-  const [manualLat, setManualLat] = useState('49.0069');
-  const [manualLng, setManualLng] = useState('8.4037');
-  const [manualAccuracy, setManualAccuracy] = useState('25');
 
   const sendLocation = useCallback(
     async (coords: { latitude: number; longitude: number; accuracy: number }) => {
@@ -48,7 +49,7 @@ export default function MemberControls({
         }
       }
     },
-    [session, onStatus],
+    [session, onStatus, onSessionInvalidated],
   );
 
   const { autoShare, setAutoShare, getCurrent } = useGeolocation(
@@ -60,28 +61,9 @@ export default function MemberControls({
     ? `${location.origin}/?invite=${inviteCode}`
     : `${location.origin}/?invite=`;
 
-  async function handleManualSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    const latitude = Number(manualLat);
-    const longitude = Number(manualLng);
-    const accuracy = manualAccuracy.trim() === '' ? 0 : Number(manualAccuracy);
-
-    if (
-      !Number.isFinite(latitude) ||
-      latitude < -90 ||
-      latitude > 90 ||
-      !Number.isFinite(longitude) ||
-      longitude < -180 ||
-      longitude > 180 ||
-      !Number.isFinite(accuracy) ||
-      accuracy < 0
-    ) {
-      onStatus('Bitte gueltige Koordinaten eingeben.');
-      return;
-    }
-
-    await sendLocation({ latitude, longitude, accuracy });
+  async function handleConfirmManualLocation() {
+    await sendLocation({ latitude: locationDragPos.lat, longitude: locationDragPos.lng, accuracy: 0 });
+    onTogglePlacingLocation();
   }
 
   return (
@@ -113,37 +95,17 @@ export default function MemberControls({
       >
         {placingMarker ? 'Abbrechen' : '📍 Marker setzen'}
       </button>
-      <button type="button" className="secondary-btn" onClick={() => setManualOpen((v) => !v)}>
-        Manuell setzen
+      <button
+        type="button"
+        className={`secondary-btn${placingLocation ? ' placing-active' : ''}`}
+        onClick={onTogglePlacingLocation}
+      >
+        {placingLocation ? 'Abbrechen' : 'Manuell setzen'}
       </button>
-      {manualOpen && (
-        <form className="manual-location-form" onSubmit={handleManualSubmit}>
-          <label>
-            Latitude
-            <input
-              inputMode="decimal"
-              value={manualLat}
-              onChange={(e) => setManualLat(e.target.value)}
-            />
-          </label>
-          <label>
-            Longitude
-            <input
-              inputMode="decimal"
-              value={manualLng}
-              onChange={(e) => setManualLng(e.target.value)}
-            />
-          </label>
-          <label>
-            Genauigkeit m
-            <input
-              inputMode="decimal"
-              value={manualAccuracy}
-              onChange={(e) => setManualAccuracy(e.target.value)}
-            />
-          </label>
-          <button type="submit">Standort aktualisieren</button>
-        </form>
+      {placingLocation && (
+        <button type="button" className="secondary-btn" onClick={handleConfirmManualLocation}>
+          Standort bestätigen
+        </button>
       )}
       <button className="leave-btn" onClick={onLeave}>
         Verlassen

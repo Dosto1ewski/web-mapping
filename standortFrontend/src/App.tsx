@@ -19,6 +19,8 @@ export default function App() {
   const [status, setStatus] = useState('');
   const [placingMarker, setPlacingMarker] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [placingLocation, setPlacingLocation] = useState(false);
+  const [locationDragPos, setLocationDragPos] = useState<{ lat: number; lng: number }>({ lat: 49.0069, lng: 8.4037 });
 
   const { members, error: locError } = usePollLocations(
     session?.groupId ?? null,
@@ -49,6 +51,7 @@ export default function App() {
     clearSession();
     setInviteCode(null);
     setPlacingMarker(false);
+    setPlacingLocation(false);
     setPendingCoords(null);
     setStatus('Gruppe verlassen.');
   }
@@ -57,8 +60,19 @@ export default function App() {
     clearSession();
     setInviteCode(null);
     setPlacingMarker(false);
+    setPlacingLocation(false);
     setPendingCoords(null);
     setStatus('Sitzung abgelaufen — ein anderes Gerät hat sich mit diesem Namen angemeldet.');
+  }
+
+  function handleTogglePlacingLocation() {
+    if (!placingLocation) {
+      const own = members.find((m) => m.memberId === session?.memberId);
+      if (own?.currentLocation) {
+        setLocationDragPos({ lat: own.currentLocation.lat, lng: own.currentLocation.lng });
+      }
+    }
+    setPlacingLocation((v) => !v);
   }
 
   function handleMapClick(lat: number, lng: number) {
@@ -108,6 +122,9 @@ export default function App() {
             placingMarker={placingMarker}
             onTogglePlacingMarker={() => setPlacingMarker((v) => !v)}
             locationUpdateIntervalMs={settings.locationUpdateSec * 1000}
+            placingLocation={placingLocation}
+            onTogglePlacingLocation={handleTogglePlacingLocation}
+            locationDragPos={locationDragPos}
           />
         )}
         {status && <p className="status">{status}</p>}
@@ -122,6 +139,9 @@ export default function App() {
         placingMarker={placingMarker}
         onMapClick={handleMapClick}
         onDeleteMarker={handleDeleteMarker}
+        placingLocation={placingLocation}
+        locationDragPos={locationDragPos}
+        onLocationDragEnd={setLocationDragPos}
       />
 
       {pendingCoords && (

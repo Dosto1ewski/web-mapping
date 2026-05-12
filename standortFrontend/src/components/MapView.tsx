@@ -93,6 +93,9 @@ interface Props {
   placingMarker: boolean;
   onMapClick: (lat: number, lng: number) => void;
   onDeleteMarker: (markerId: string) => void;
+  placingLocation: boolean;
+  locationDragPos: { lat: number; lng: number };
+  onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
 }
 
 export default function MapView({
@@ -102,6 +105,9 @@ export default function MapView({
   placingMarker,
   onMapClick,
   onDeleteMarker,
+  placingLocation,
+  locationDragPos,
+  onLocationDragEnd,
 }: Props) {
   return (
     <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
@@ -167,6 +173,21 @@ export default function MapView({
           </Marker>
         );
       })}
+
+      {placingLocation && (
+        <Marker
+          position={[locationDragPos.lat, locationDragPos.lng]}
+          draggable={true}
+          eventHandlers={{
+            dragend(e) {
+              const { lat, lng } = (e.target as L.Marker).getLatLng();
+              onLocationDragEnd({ lat, lng });
+            },
+          }}
+        >
+          <Popup>Ziehe den Marker an deinen Standort</Popup>
+        </Marker>
+      )}
     </MapContainer>
   );
 }
