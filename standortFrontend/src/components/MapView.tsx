@@ -1,6 +1,6 @@
 import { useEffect, Fragment } from 'react';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import type { MemberLocationDto, MarkerDto } from '../api/types';
 import type { Session } from '../state/session';
 
@@ -9,6 +9,31 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
 L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+
+const USER_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e91e63'];
+
+function getUserColor(memberId: string): string {
+  let hash = 0;
+  for (let i = 0; i < memberId.length; i++) {
+    hash = (hash * 31 + memberId.charCodeAt(i)) & 0xffffffff;
+  }
+  return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+}
+
+function segmentBearing(from: [number, number], to: [number, number]): number {
+  return Math.atan2(to[1] - from[1], to[0] - from[0]) * (180 / Math.PI) - 90;
+}
+
+function createArrowIcon(color: string, angleDeg: number): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(${angleDeg}deg);display:block;overflow:visible;">
+      <polygon points="6,0 12,12 6,9 0,12" fill="${color}" stroke="white" stroke-width="0.8"/>
+    </svg>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
 
 function createColoredIcon(color: string): L.DivIcon {
   return L.divIcon({
@@ -91,16 +116,30 @@ export default function MapView({
       {members.map((member) => {
         if (!member.currentLocation) return null;
         const pos: [number, number] = [member.currentLocation.lat, member.currentLocation.lng];
+        const color = getUserColor(member.memberId);
         const trail: [number, number][] = [
           ...member.recentHistory.map((p): [number, number] => [p.lat, p.lng]),
           pos,
         ];
+        const arrows = trail.slice(0, -1).map((from, i) => {
+          const to = trail[i + 1];
+          const mid: [number, number] = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+          return { mid, angle: segmentBearing(from, to), key: i };
+        });
         return (
           <Fragment key={member.memberId}>
             <Marker position={pos}>
               <Popup>{member.displayName}</Popup>
             </Marker>
-            {trail.length >= 2 && <Polyline positions={trail} color="royalblue" weight={2} />}
+            {arrows.map(({ mid, angle, key }) => (
+              <Marker
+                key={key}
+                position={mid}
+                icon={createArrowIcon(color, angle)}
+                zIndexOffset={-100}
+                interactive={false}
+              />
+            ))}
           </Fragment>
         );
       })}

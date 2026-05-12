@@ -256,7 +256,7 @@ Future enhancements: per-marker ownership checks (delete only own marker), marke
 - [ ] **Audit log** — append-only log of token rotations and joins, stored as separate Cosmos documents, for debugging "who took my session" issues.
 
 ### Features
-- [ ] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
+- [X] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
   Active session per username.
 - [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers.
 - [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members.
@@ -264,7 +264,7 @@ Future enhancements: per-marker ownership checks (delete only own marker), marke
 ### Design
 - [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
-- [ ] **Color change for historic Locations of users** Make tracking an user easier by color-coding their historic path
+- [x] **Improved History of user** 
 ### Real-time
 
 - [ ] **SignalR push** — replace polling with Azure SignalR Service. The `PUT /location` write path already has a clear commit point; a SignalR hub notification can be emitted there. Polling endpoint stays as fallback.
