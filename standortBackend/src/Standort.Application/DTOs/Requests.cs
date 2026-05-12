@@ -9,3 +9,10 @@ public sealed record UpdateLocationRequest(
     double Lng,
     double AccuracyMeters,
     DateTimeOffset RecordedAt);
+
+public sealed record CreateMarkerRequest(
+    string Name,
+    double Lat,
+    double Lng,
+    string? Color,
+    string? Notes);

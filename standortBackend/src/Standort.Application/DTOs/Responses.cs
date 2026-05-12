@@ -29,3 +29,13 @@ public sealed record GroupLocationsResponse(
     string GroupId,
     long Version,
     IReadOnlyList<MemberLocationDto> Members);
+
+public sealed record MarkerDto(
+    string MarkerId,
+    string Name,
+    double Lat,
+    double Lng,
+    string? Color,
+    string? Notes,
+    string CreatedByMemberId,
+    DateTimeOffset CreatedAt);

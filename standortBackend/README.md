@@ -243,6 +243,135 @@ GET http://localhost:7071/api/groups/{groupId}/locations?sinceVersion=5
 
 Pass the last received `version` as `sinceVersion`. If nothing changed since that version, the API returns `304 Not Modified`.
 
+### 5. Create marker
+
+Persists a fixed marker (point of interest) for the whole group. Every member of the group can place markers; deletion is also open to every member.
+
+Method and URL:
+
+```text
+POST http://localhost:7071/api/groups/{groupId}/members/{memberId}/markers
+```
+
+Headers:
+
+```text
+Content-Type: application/json
+Authorization: Bearer {memberToken}
+```
+
+Body:
+
+```json
+{
+  "name": "Treffpunkt Parkplatz",
+  "lat": 52.520008,
+  "lng": 13.404954,
+  "color": "#FF8800",
+  "notes": "Großer Parkplatz hinter der Brücke"
+}
+```
+
+`color` and `notes` are optional and may be omitted or set to `null`.
+
+Response `201 Created`:
+
+```json
+{
+  "markerId": "9f3c0a1c8b9d4f7a8e2d1f0a3b4c5d6e",
+  "name": "Treffpunkt Parkplatz",
+  "lat": 52.520008,
+  "lng": 13.404954,
+  "color": "#FF8800",
+  "notes": "Großer Parkplatz hinter der Brücke",
+  "createdByMemberId": "BQP8JT4W174YH13A",
+  "createdAt": "2026-05-12T10:00:00Z"
+}
+```
+
+Validation rules:
+
+- `name` is required, max. 100 characters
+- `lat` in `[-90, 90]`, `lng` in `[-180, 180]`
+- `color` max. 50 characters (optional)
+- `notes` max. 500 characters (optional)
+
+Possible error responses:
+
+- `400 Bad Request` — validation failed or malformed JSON
+- `401 Unauthorized` — missing/invalid bearer token
+- `404 Not Found` — group or member does not exist
+
+### 6. Fetch all markers
+
+Returns all markers belonging to a group. No authentication required, matching the read model of `GET /locations`.
+
+Method and URL:
+
+```text
+GET http://localhost:7071/api/groups/{groupId}/markers
+```
+
+No body is required.
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "markerId": "9f3c0a1c8b9d4f7a8e2d1f0a3b4c5d6e",
+    "name": "Treffpunkt Parkplatz",
+    "lat": 52.520008,
+    "lng": 13.404954,
+    "color": "#FF8800",
+    "notes": "Großer Parkplatz hinter der Brücke",
+    "createdByMemberId": "BQP8JT4W174YH13A",
+    "createdAt": "2026-05-12T10:00:00Z"
+  },
+  {
+    "markerId": "5a1d8e4b7c3a2f9e0d8c1b2a3d4e5f60",
+    "name": "Gipfel",
+    "lat": 52.521234,
+    "lng": 13.408765,
+    "color": null,
+    "notes": null,
+    "createdByMemberId": "P3SWDAQ45B5EH6TR",
+    "createdAt": "2026-05-12T10:05:23Z"
+  }
+]
+```
+
+If the group has no markers, the response is an empty array `[]`.
+
+Possible error response:
+
+- `404 Not Found` — group does not exist
+
+### 7. Delete marker
+
+Deletes a marker by its `markerId`. Any group member can delete any marker (no per-marker ownership check in V1).
+
+Method and URL:
+
+```text
+DELETE http://localhost:7071/api/groups/{groupId}/members/{memberId}/markers/{markerId}
+```
+
+Headers:
+
+```text
+Authorization: Bearer {memberToken}
+```
+
+No body is required.
+
+Response `204 No Content`.
+
+Possible error responses:
+
+- `401 Unauthorized` — missing/invalid bearer token
+- `404 Not Found` — group, member, or marker does not exist
+
 ## Deployment
 
 Bicep lives at `infra/main.bicep` in the repository root. Run all `az` commands from there.
@@ -264,6 +393,7 @@ The `groups` container was initially created with partition key `/id` but the co
 
 ## Notes
 
-- No auth on `GET /locations` in V1: anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.
+- No auth on `GET /locations` and `GET /markers` in V1: anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.
+- Marker deletion in V1 has no per-marker ownership: every group member can delete every marker. Per-creator authorization can be added in V2 if needed.
 - `inviteCode` format: 8 Crockford-Base32 characters in `XXXX-XXXX` form, without ambiguous I/L/O/U characters.
 - Production deployment with Bicep, pipelines, and DefaultAzureCredential RBAC is out of scope for V1.

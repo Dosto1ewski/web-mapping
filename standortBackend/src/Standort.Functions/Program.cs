@@ -49,6 +49,7 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 builder.Services.AddSingleton<CosmosBootstrapper>();
 builder.Services.AddSingleton<IGroupRepository, CosmosGroupRepository>();
 builder.Services.AddSingleton<IInviteCodeRepository, CosmosInviteCodeRepository>();
+builder.Services.AddSingleton<IMarkerRepository, CosmosMarkerRepository>();
 
 builder.Services.AddSingleton<ISystemClock, SystemClock>();
 builder.Services.AddSingleton<ITokenHasher, Sha256TokenHasher>();
@@ -57,10 +58,12 @@ builder.Services.AddSingleton<IInviteCodeGenerator, CrockfordInviteCodeGenerator
 
 builder.Services.AddSingleton<GroupService>();
 builder.Services.AddSingleton<LocationService>();
+builder.Services.AddSingleton<MarkerService>();
 
 builder.Services.AddSingleton<IValidator<CreateGroupRequest>, CreateGroupRequestValidator>();
 builder.Services.AddSingleton<IValidator<JoinGroupRequest>, JoinGroupRequestValidator>();
 builder.Services.AddSingleton<IValidator<UpdateLocationRequest>, UpdateLocationRequestValidator>();
+builder.Services.AddSingleton<IValidator<CreateMarkerRequest>, CreateMarkerRequestValidator>();
 
 var host = builder.Build();
 

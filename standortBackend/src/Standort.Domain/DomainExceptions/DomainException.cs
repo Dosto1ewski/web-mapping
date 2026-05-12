@@ -28,6 +28,12 @@ public sealed class InviteCodeNotFoundException : DomainException
         : base($"Invite code '{inviteCode}' is not valid.") { }
 }
 
+public sealed class MarkerNotFoundException : DomainException
+{
+    public MarkerNotFoundException(string markerId)
+        : base($"Marker '{markerId}' was not found.") { }
+}
+
 public sealed class ConcurrencyException : DomainException
 {
     public ConcurrencyException(string message) : base(message) { }
