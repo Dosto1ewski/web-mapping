@@ -8,15 +8,21 @@ Run these commands from the `standortFrontend` directory:
 # 1. Build
 npm run build
 
-# 2. Fetch the deploy token
+
+# 2. If you have an azure account:
+# Fetch the deploy token
 $token = az deployment group show `
   --resource-group rg-standort-prod `
   --name deploy-standort-prod `
   --query properties.outputs.staticWebAppDeployToken.value `
   -o tsv
 
+## 2. If you do not have an azure account:
+npx @azure/static-web-apps-cli deploy ./dist --deployment-token "<HIER TOKEN einfügen>" --env Production
+
 # 3. Deploy
 npx @azure/static-web-apps-cli deploy ./dist --deployment-token $token --env Production
+
 ```
 
 The site is live at the "Default domain" shown in the Azure Portal under **stapp-standort-prod**.
