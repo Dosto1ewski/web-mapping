@@ -243,6 +243,25 @@ GET http://localhost:7071/api/groups/{groupId}/locations?sinceVersion=5
 
 Pass the last received `version` as `sinceVersion`. If nothing changed since that version, the API returns `304 Not Modified`.
 
+## Deployment
+
+Bicep lives at `infra/main.bicep` in the repository root. Run all `az` commands from there.
+
+### Redeploy infrastructure
+
+```powershell
+az deployment group create `
+  --resource-group rg-standort-prod `
+  --template-file infra/main.bicep
+```
+
+### Fixing the Cosmos DB partition key (one-time)
+
+The `groups` container was initially created with partition key `/id` but the code expects `/groupId`. Cosmos DB does not allow changing the partition key on an existing container, so you must delete and recreate it:
+
+1. Azure Portal → your Cosmos account → `standort` database → delete the `groups` container
+2. Run the redeploy command above — it recreates the container with the correct `/groupId` partition key
+
 ## Notes
 
 - No auth on `GET /locations` in V1: anyone who knows the `groupId` can read. A read-token will be added in V2 if needed.

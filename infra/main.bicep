@@ -101,7 +101,7 @@ resource cosmosGroupsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabas
     resource: {
       id: 'groups'
       partitionKey: {
-        paths: ['/id']
+        paths: ['/groupId']
         kind: 'Hash'
       }
     }
