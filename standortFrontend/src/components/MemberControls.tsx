@@ -8,6 +8,7 @@ interface Props {
   session: Session;
   inviteCode: string | null;
   onLeave: () => void;
+  onSessionInvalidated: () => void;
   onStatus: (msg: string) => void;
   placingMarker: boolean;
   onTogglePlacingMarker: () => void;
@@ -18,6 +19,7 @@ export default function MemberControls({
   session,
   inviteCode,
   onLeave,
+  onSessionInvalidated,
   onStatus,
   placingMarker,
   onTogglePlacingMarker,
@@ -40,7 +42,7 @@ export default function MemberControls({
         onStatus('Standort geteilt.');
       } catch (err) {
         if (err instanceof ApiException && err.status === 401) {
-          onStatus('Token abgelaufen — bitte neu beitreten.');
+          onSessionInvalidated();
         } else {
           onStatus(err instanceof Error ? err.message : 'Standort konnte nicht gesendet werden.');
         }

@@ -53,6 +53,14 @@ export default function App() {
     setStatus('Gruppe verlassen.');
   }
 
+  function handleSessionInvalidated() {
+    clearSession();
+    setInviteCode(null);
+    setPlacingMarker(false);
+    setPendingCoords(null);
+    setStatus('Sitzung abgelaufen — ein anderes Gerät hat sich mit diesem Namen angemeldet.');
+  }
+
   function handleMapClick(lat: number, lng: number) {
     setPlacingMarker(false);
     setPendingCoords({ lat, lng });
@@ -78,7 +86,7 @@ export default function App() {
       refreshMarkers();
     } catch (err) {
       if (err instanceof ApiException && err.status === 401) {
-        setStatus('Token abgelaufen — bitte neu beitreten.');
+        handleSessionInvalidated();
       } else {
         setStatus(err instanceof Error ? err.message : 'Löschen fehlgeschlagen.');
       }
@@ -95,6 +103,7 @@ export default function App() {
             session={session}
             inviteCode={inviteCode}
             onLeave={handleLeave}
+            onSessionInvalidated={handleSessionInvalidated}
             onStatus={setStatus}
             placingMarker={placingMarker}
             onTogglePlacingMarker={() => setPlacingMarker((v) => !v)}
