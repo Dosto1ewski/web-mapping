@@ -229,11 +229,6 @@ dotnet test
 
 ## Future tasks
 
-### Cloud deployment (V2-infra)
-
-- [ ] **Bicep templates** — Cosmos DB account (serverless SKU), Function App (Consumption plan), App Service Plan, Storage Account, Key Vault for secrets.
-- [ ] **Managed Identity wiring** — remove `AccountKey` from production config; grant Function's identity `Cosmos DB Built-in Data Contributor` on the account.
-- [ ] **Azure Static Web Apps integration** — configure SWA to proxy `/api/*` to the Function App, or migrate to SWA Managed Functions if moving to that model.
 
 ### Security hardening
 
@@ -241,29 +236,14 @@ dotnet test
 - [ ] **Invite code revocation / rotation** — allow the group creator to invalidate the current invite code and issue a new one without dissolving the group.
 - [ ] **Rate limiting** — per-member leaky bucket on `PUT /location` to prevent flood updates; can be implemented as ASP.NET Core middleware or an API Management policy.
 - [ ] **Token expiry** — add `TokenExpiresAt` to `Member`; `401` on expired tokens to force re-join. Useful for session hygiene in long-running groups.
+- [ ] **Session ID retry limit** — Rate-limit trying groupIDs, for joining a session.
 - [ ] **Audit log** — append-only log of token rotations and joins, stored as separate Cosmos documents, for debugging "who took my session" issues.
 
 ### Features
-
-- [ ] **Stop sharing** — member sets their own `CurrentLocation = null` and clears `RecentHistory`; they remain in the group but appear as "location not shared". Implement as `DELETE /api/groups/{groupId}/members/{memberId}/location`.
-- [ ] **Group lifecycle / expiry** — optional TTL per group (e.g. 48 h after last activity). Requires a `LastActivityAt` on the group doc and a background Function that runs on a timer.
-- [ ] **Leave group** — member explicitly removes themselves; group doc version increments so polling clients see the removal.
-- [ ] **Shared markers / pins** — group members can drop named pins on the map (separate document type in the `groups` container). Out of scope for V1 by design.
-- [ ] **Navigation / routing** — backend stores a shared destination; frontend shows route and ETA. V2+ feature.
+- [ ] **Location sharing only when set to Auto share** — Share location automatically only when the marker is marked for Auto-Marker.
+- [ ] **Navigation / routing** — backend stores a shared destination; frontend shows route and ETA.
 
 ### Real-time
 
 - [ ] **SignalR push** — replace polling with Azure SignalR Service. The `PUT /location` write path already has a clear commit point; a SignalR hub notification can be emitted there. Polling endpoint stays as fallback.
 - [ ] **Server-Sent Events (SSE)** — lighter-weight alternative to SignalR for read-only push. Function holds open an SSE stream and pushes on group version change.
-
-### Developer experience
-
-- [ ] **Integration test project** (`Standort.IntegrationTests`) — tests that run against the Cosmos DB Emulator in CI. Gate on emulator availability so they don't break the unit-test suite.
-- [ ] **Docker Compose setup** — `docker-compose.yml` spinning up the Cosmos emulator + `func start` so new contributors can start with one command.
-- [ ] **OpenAPI / Swagger** — add `Microsoft.Azure.Functions.Worker.Extensions.OpenApi` and expose a Swagger UI at `/api/swagger` for frontend developers.
-- [ ] **Structured logging** — replace implicit `ILogger` usage with structured log properties (groupId, memberId, version) so Application Insights traces are queryable.
-
-### Observability
-
-- [ ] **Application Insights wiring** — connect the Functions telemetry sink; add custom metrics for location update rate and 304 hit ratio.
-- [ ] **Health check endpoint** — `GET /api/health` that verifies Cosmos connectivity; used by load balancers and uptime monitors.

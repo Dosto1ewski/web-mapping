@@ -374,15 +374,43 @@ Possible error responses:
 
 ## Deployment
 
-Bicep lives at `infra/main.bicep` in the repository root. Run all `az` commands from there.
+### Prerequisites for Azure deployment
 
-### Redeploy infrastructure
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
+
+### Deploy infrastructure with Bicep
+
+Bicep lives at `infra/main.bicep` in the repository root. Run all `az` commands from there.
 
 ```powershell
 az deployment group create `
   --resource-group rg-standort-prod `
   --template-file infra/main.bicep
 ```
+
+### Publish function code to Azure
+
+After Bicep deployment succeeds, deploy your compiled function code:
+
+```powershell
+cd src/Standort.Functions
+func azure functionapp publish func-standort-prod
+```
+
+Bicep only provisions infrastructure; this step deploys the actual function code (endpoints, handlers, etc.). Run this after:
+- Adding or modifying HTTP endpoints (like marker endpoints)
+- Updating business logic or validators
+- Changing dependencies or configurations
+
+### Full deployment workflow
+
+1. Make code changes
+2. Test locally with `func start` (after `dotnet build`)
+3. Run Bicep to ensure infrastructure is up-to-date
+4. Run `func azure functionapp publish func-standort-prod` to deploy code changes
+
+The function app must exist in Azure before publishing; if it doesn't, Bicep will create it.
 
 ### Fixing the Cosmos DB partition key (one-time)
 

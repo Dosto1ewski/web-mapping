@@ -7,9 +7,9 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  locationFetchSec: 10,
-  markerFetchSec: 15,
-  locationUpdateSec: 10,
+  locationFetchSec: 20,
+  markerFetchSec: 20,
+  locationUpdateSec: 20,
 };
 
 const STORAGE_KEY = 'standort_settings';
