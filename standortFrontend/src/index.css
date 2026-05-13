@@ -21,6 +21,11 @@ html,
   width: 100vw;
 }
 
+.trail-arrow {
+  background: none !important;
+  border: none !important;
+}
+
 .leaflet-map {
   height: 100vh;
   width: 100vw;

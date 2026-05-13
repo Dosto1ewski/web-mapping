@@ -1,6 +1,6 @@
 import { useEffect, Fragment } from 'react';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import type { MemberLocationDto, MarkerDto } from '../api/types';
 import type { Session } from '../state/session';
 
@@ -21,13 +21,65 @@ function getUserColor(memberId: string): string {
 }
 
 function segmentBearing(from: [number, number], to: [number, number]): number {
-  return Math.atan2(to[1] - from[1], to[0] - from[0]) * (180 / Math.PI) - 90;
+  // from/to are [lat, lng]; atan2(Δlng, Δlat) maps directly to CSS rotate() (north=0°, east=90°)
+  return Math.atan2(to[1] - from[1], to[0] - from[0]) * (180 / Math.PI);
+}
+
+function haversineMeters(a: [number, number], b: [number, number]): number {
+  const R = 6371000;
+  const dLat = ((b[0] - a[0]) * Math.PI) / 180;
+  const dLng = ((b[1] - a[1]) * Math.PI) / 180;
+  const lat1 = (a[0] * Math.PI) / 180;
+  const lat2 = (b[0] * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+function trailArrows(
+  trail: [number, number][],
+  spacingM: number,
+): { pos: [number, number]; angle: number; key: string }[] {
+  const result: { pos: [number, number]; angle: number; key: string }[] = [];
+  for (let i = 0; i < trail.length - 1; i++) {
+    const from = trail[i];
+    const to = trail[i + 1];
+    const dist = haversineMeters(from, to);
+    const angle = segmentBearing(from, to);
+    const count = Math.max(1, Math.round(dist / spacingM));
+    for (let j = 0; j < count; j++) {
+      const t = (j + 0.5) / count;
+      result.push({
+        pos: [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t],
+        angle,
+        key: `${i}-${j}`,
+      });
+    }
+  }
+  return result;
+}
+
+function createMemberIcon(color: string): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:20px;height:20px;
+      border-radius:50%;
+      background:${color};
+      border:3px solid white;
+      box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    "></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -14],
+  });
 }
 
 function createArrowIcon(color: string, angleDeg: number): L.DivIcon {
   return L.divIcon({
-    className: '',
-    html: `<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(${angleDeg}deg);display:block;overflow:visible;">
+    className: 'trail-arrow',
+    html: `<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(${angleDeg}deg);display:block;overflow:visible;background:none;border:none;">
       <polygon points="6,0 12,12 6,9 0,12" fill="${color}" stroke="white" stroke-width="0.8"/>
     </svg>`,
     iconSize: [14, 14],
@@ -127,20 +179,22 @@ export default function MapView({
           ...member.recentHistory.map((p): [number, number] => [p.lat, p.lng]),
           pos,
         ];
-        const arrows = trail.slice(0, -1).map((from, i) => {
-          const to = trail[i + 1];
-          const mid: [number, number] = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
-          return { mid, angle: segmentBearing(from, to), key: i };
-        });
+        const arrows = trailArrows(trail, 30);
         return (
           <Fragment key={member.memberId}>
-            <Marker position={pos}>
+            <Marker position={pos} icon={createMemberIcon(color)}>
               <Popup>{member.displayName}</Popup>
             </Marker>
-            {arrows.map(({ mid, angle, key }) => (
+            {trail.length > 1 && (
+              <Polyline
+                positions={trail}
+                pathOptions={{ color, opacity: 0.35, weight: 2, dashArray: '4 7' }}
+              />
+            )}
+            {arrows.map(({ pos: arrowPos, angle, key }) => (
               <Marker
                 key={key}
-                position={mid}
+                position={arrowPos}
                 icon={createArrowIcon(color, angle)}
                 zIndexOffset={-100}
                 interactive={false}
