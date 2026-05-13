@@ -260,10 +260,12 @@ Future enhancements: per-marker ownership checks (delete only own marker), marke
   Active session per username.
 - [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers.
 - [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members.
+- [ ] **Invetlink statt URL + TOKEN** — 
 
 ### Design
 - [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
+- [x] **Show Nametags** — Have a checkbox in Settings, which makes it, that the User-Location-markers have their nametag hovering besides them. Default is: on
 - [x] **Improved History of user** 
 ### Real-time
 

@@ -72,6 +72,14 @@ export default function SettingsPanel({ settings, onUpdate }: Props) {
               }
             />
           </label>
+          <label className="settings-row">
+            Namensschilder anzeigen
+            <input
+              type="checkbox"
+              checked={settings.showNametags}
+              onChange={(e) => onUpdate({ showNametags: e.target.checked })}
+            />
+          </label>
         </div>
       )}
     </div>

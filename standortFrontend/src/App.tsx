@@ -142,6 +142,7 @@ export default function App() {
         placingLocation={placingLocation}
         locationDragPos={locationDragPos}
         onLocationDragEnd={setLocationDragPos}
+        showNametags={settings.showNametags}
       />
 
       {pendingCoords && (

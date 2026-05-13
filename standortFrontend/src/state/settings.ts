@@ -4,12 +4,14 @@ export interface Settings {
   locationFetchSec: number;
   markerFetchSec: number;
   locationUpdateSec: number;
+  showNametags: boolean;
 }
 
 const DEFAULTS: Settings = {
   locationFetchSec: 20,
   markerFetchSec: 20,
   locationUpdateSec: 20,
+  showNametags: true,
 };
 
 const STORAGE_KEY = 'standort_settings';

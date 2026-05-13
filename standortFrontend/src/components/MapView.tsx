@@ -1,6 +1,6 @@
 import { useEffect, Fragment } from 'react';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { MemberLocationDto, MarkerDto } from '../api/types';
 import type { Session } from '../state/session';
 
@@ -148,6 +148,7 @@ interface Props {
   placingLocation: boolean;
   locationDragPos: { lat: number; lng: number };
   onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
+  showNametags: boolean;
 }
 
 export default function MapView({
@@ -160,6 +161,7 @@ export default function MapView({
   placingLocation,
   locationDragPos,
   onLocationDragEnd,
+  showNametags,
 }: Props) {
   return (
     <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
@@ -184,6 +186,11 @@ export default function MapView({
           <Fragment key={member.memberId}>
             <Marker position={pos} icon={createMemberIcon(color)}>
               <Popup>{member.displayName}</Popup>
+              {showNametags && (
+                <Tooltip permanent direction="right" offset={[12, 0]} className="member-nametag">
+                  {member.displayName}
+                </Tooltip>
+              )}
             </Marker>
             {trail.length > 1 && (
               <Polyline
