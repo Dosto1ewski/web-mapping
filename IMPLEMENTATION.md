@@ -315,6 +315,7 @@ Example Body:
 
 ### Design
 - [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
+- [ ] **Pop Up** — Style und einklappbar
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
 - [x] **Show Nametags** — Have a checkbox in Settings, which makes it, that the User-Location-markers have their nametag hovering besides them. Default is: on
 - [x] **Improved History of user** 
