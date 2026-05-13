@@ -21,6 +21,7 @@ export default function App() {
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [placingLocation, setPlacingLocation] = useState(false);
   const [locationDragPos, setLocationDragPos] = useState<{ lat: number; lng: number }>({ lat: 49.0069, lng: 8.4037 });
+  const [ownLocation, setOwnLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const { members, error: locError } = usePollLocations(
     session?.groupId ?? null,
@@ -53,6 +54,7 @@ export default function App() {
     setPlacingMarker(false);
     setPlacingLocation(false);
     setPendingCoords(null);
+    setOwnLocation(null);
     setStatus('Gruppe verlassen.');
   }
 
@@ -62,6 +64,7 @@ export default function App() {
     setPlacingMarker(false);
     setPlacingLocation(false);
     setPendingCoords(null);
+    setOwnLocation(null);
     setStatus('Sitzung abgelaufen — ein anderes Gerät hat sich mit diesem Namen angemeldet.');
   }
 
@@ -125,6 +128,7 @@ export default function App() {
             placingLocation={placingLocation}
             onTogglePlacingLocation={handleTogglePlacingLocation}
             locationDragPos={locationDragPos}
+            onOwnLocation={setOwnLocation}
           />
         )}
         {status && <p className="status">{status}</p>}
@@ -143,6 +147,7 @@ export default function App() {
         locationDragPos={locationDragPos}
         onLocationDragEnd={setLocationDragPos}
         showNametags={settings.showNametags}
+        ownLocation={ownLocation}
       />
 
       {pendingCoords && (

@@ -149,6 +149,23 @@ interface Props {
   locationDragPos: { lat: number; lng: number };
   onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
   showNametags: boolean;
+  ownLocation: { lat: number; lng: number } | null;
+}
+
+function createOwnIcon(color: string): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:22px;height:22px;
+      border-radius:50%;
+      background:${color};
+      border:3px solid white;
+      box-shadow:0 0 0 3px ${color}55, 0 2px 8px rgba(0,0,0,0.5);
+    "></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -15],
+  });
 }
 
 export default function MapView({
@@ -162,7 +179,10 @@ export default function MapView({
   locationDragPos,
   onLocationDragEnd,
   showNametags,
+  ownLocation,
 }: Props) {
+  const ownMemberId = session?.memberId ?? null;
+
   return (
     <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
       <TileLayer
@@ -174,6 +194,7 @@ export default function MapView({
       <MapClickHandler placingMarker={placingMarker} onMapClick={onMapClick} />
 
       {members.map((member) => {
+        if (member.memberId === ownMemberId) return null;
         if (!member.currentLocation) return null;
         const pos: [number, number] = [member.currentLocation.lat, member.currentLocation.lng];
         const color = getUserColor(member.memberId);
@@ -210,6 +231,21 @@ export default function MapView({
           </Fragment>
         );
       })}
+
+      {ownLocation && session && (() => {
+        const pos: [number, number] = [ownLocation.lat, ownLocation.lng];
+        const color = getUserColor(session.memberId);
+        return (
+          <Marker key="own-live" position={pos} icon={createOwnIcon(color)}>
+            <Popup>{session.displayName} (du)</Popup>
+            {showNametags && (
+              <Tooltip permanent direction="right" offset={[13, 0]} className="member-nametag">
+                {session.displayName}
+              </Tooltip>
+            )}
+          </Marker>
+        );
+      })()}
 
       {markers.map((marker) => {
         const pos: [number, number] = [marker.lat, marker.lng];

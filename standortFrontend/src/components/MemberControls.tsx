@@ -15,6 +15,7 @@ interface Props {
   placingLocation: boolean;
   onTogglePlacingLocation: () => void;
   locationDragPos: { lat: number; lng: number };
+  onOwnLocation: (loc: { lat: number; lng: number }) => void;
 }
 
 export default function MemberControls({
@@ -29,10 +30,12 @@ export default function MemberControls({
   placingLocation,
   onTogglePlacingLocation,
   locationDragPos,
+  onOwnLocation,
 }: Props) {
 
   const sendLocation = useCallback(
     async (coords: { latitude: number; longitude: number; accuracy: number }) => {
+      onOwnLocation({ lat: coords.latitude, lng: coords.longitude });
       try {
         await updateLocation(session.groupId, session.memberId, session.memberToken, {
           lat: coords.latitude,
@@ -49,7 +52,7 @@ export default function MemberControls({
         }
       }
     },
-    [session, onStatus, onSessionInvalidated],
+    [session, onStatus, onSessionInvalidated, onOwnLocation],
   );
 
   const { autoShare, setAutoShare, getCurrent } = useGeolocation(

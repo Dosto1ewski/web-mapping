@@ -243,6 +243,26 @@ Future enhancements: per-marker ownership checks (delete only own marker), marke
 
 ---
 
+### Eigener Standort als Live-State (Frontend)
+
+Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern über den Server-Poll (`GET /locations`) auf der Karte angezeigt. Das bedeutete: nach dem Teilen des Standorts konnte es bis zu `locationFetchSec` Sekunden dauern, bis der eigene Marker auf der Karte aktualisiert wurde.
+
+**Neue Logik:**
+
+- Sobald der Nutzer seinen Standort teilt (GPS-Auto-Share, manueller Button, oder manuelles Setzen), wird die Position sofort in einem lokalen `ownLocation`-State in `App.tsx` gespeichert.
+- Der eigene Member wird im Poll-Result (`usePollLocations`) auf der Karte **ignoriert** — `MapView` filtert ihn anhand der `session.memberId` heraus.
+- Stattdessen wird ein eigener Live-Marker gerendert, der direkt aus `ownLocation` kommt — ohne Umweg über den Server-Poll.
+- Der eigene Marker hat ein leicht anderes Icon (Glow-Ring), damit er visuell als "ich" erkennbar ist.
+
+**Warum das wichtig ist für Navigation:** Für Routing/ETA muss das Frontend den eigenen Standort so aktuell wie möglich kennen. Mit diesem Design ist `ownLocation` immer exakt so frisch wie die letzte GPS-Messung — unabhängig vom Poll-Intervall.
+
+**Betroffene Dateien:**
+- `MemberControls.tsx` — neuer `onOwnLocation`-Callback, der in `sendLocation` sofort gefeuert wird
+- `App.tsx` — `ownLocation`-State; wird bei Verlassen/Session-Ablauf zurückgesetzt
+- `MapView.tsx` — eigener Member wird aus der Poll-Liste gefiltert; separater Live-Marker mit `createOwnIcon`
+
+---
+
 ## Future tasks
 
 
@@ -258,8 +278,8 @@ Future enhancements: per-marker ownership checks (delete only own marker), marke
 ### Features
 - [X] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
   Active session per username.
-- [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers.
-- [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members.
+- [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers. Voraussetzung (eigener Live-Standort) ist implementiert.
+- [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Voraussetzung (eigener Live-Standort) ist implementiert.
 - [ ] **Invetlink statt URL + TOKEN** — 
 
 ### Design
