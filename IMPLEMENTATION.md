@@ -279,6 +279,37 @@ Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern ü
 - [X] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
   Active session per username.
 - [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers. Voraussetzung (eigener Live-Standort) ist implementiert.
+Using graphhopper:
+POST: https://graphhopper.com/api/l/route
+Example Body:
+```
+{
+  "points": [
+    [
+      11.539421,
+      48.118477
+    ],
+    [
+      11.559023,
+      48.12228
+    ]
+  ],
+  "snap_preventions": [
+    "motorway",
+    "ferry",
+    "tunnel"
+  ],
+  "details": [
+    "road_class",
+    "surface"
+  ],
+  "profile": "car",
+  "locale": "en",
+  "instructions": true,
+  "calc_points": true,
+  "points_encoded": false
+}
+```
 - [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Voraussetzung (eigener Live-Standort) ist implementiert.
 - [ ] **Invetlink statt URL + TOKEN** — 
 
