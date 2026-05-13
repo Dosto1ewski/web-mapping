@@ -224,12 +224,41 @@ Response `200 OK`:
       },
       "recentHistory": [
         {
-          "lat": 52.520008,
-          "lng": 13.404954,
-          "accuracyMeters": 12.5,
-          "recordedAt": "2026-05-06T10:00:00Z"
+            "lat": 49.0069,
+            "lng": 8.404,
+            "accuracyMeters": 25,
+            "recordedAt": "2026-05-12T23:41:09.966+00:00",
+            "serverReceivedAt": "2026-05-12T23:41:11.7797617+00:00"
+        },
+        {
+            "lat": 49.0069,
+            "lng": 8.409,
+            "accuracyMeters": 25,
+            "recordedAt": "2026-05-12T23:41:38.213+00:00",
+            "serverReceivedAt": "2026-05-12T23:41:40.0210751+00:00"
+        },
+        {
+            "lat": 49.0069,
+            "lng": 8.409,
+            "accuracyMeters": 25,
+            "recordedAt": "2026-05-12T23:41:41.684+00:00",
+            "serverReceivedAt": "2026-05-12T23:41:43.5025386+00:00"
+        },
+        {
+            "lat": 49.0095293550832,
+            "lng": 8.411664962768556,
+            "accuracyMeters": 0,
+            "recordedAt": "2026-05-12T23:53:05.483+00:00",
+            "serverReceivedAt": "2026-05-12T23:53:07.369361+00:00"
+        },
+        {
+            "lat": 49.009276007932016,
+            "lng": 8.406858444213869,
+            "accuracyMeters": 0,
+            "recordedAt": "2026-05-12T23:53:21.653+00:00",
+            "serverReceivedAt": "2026-05-12T23:53:23.4867437+00:00"
         }
-      ]
+      ],
     }
   ]
 }
