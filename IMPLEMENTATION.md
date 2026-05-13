@@ -265,7 +265,8 @@ Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern ü
 
 ## Future tasks
 
-
+## Bugs
+- [ ] **Sometimes the location of others users is not displayed**
 ### Security hardening
 
 - [ ] **Read token for GET /locations** — require a group-level read token so that knowing `groupId` alone is not sufficient. Useful once groups are used in more public contexts.
@@ -278,6 +279,7 @@ Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern ü
 ### Features
 - [X] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
   Active session per username.
+- [ ] **Jump to my current location Button** Wie der blaue Pfeil in Maps unten rechts
 - [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers. Voraussetzung (eigener Live-Standort) ist implementiert.
 Using graphhopper:
 POST: https://graphhopper.com/api/l/route
@@ -311,14 +313,16 @@ Example Body:
 }
 ```
 - [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Voraussetzung (eigener Live-Standort) ist implementiert.
-- [ ] **Invetlink statt URL + TOKEN** — 
+- [ ] **Invitelink statt URL + TOKEN** — 
 
 ### Design
 - [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
 - [ ] **Pop Up** — Style und einklappbar
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
 - [x] **Show Nametags** — Have a checkbox in Settings, which makes it, that the User-Location-markers have their nametag hovering besides them. Default is: on
+- [ ] **Show Nametag for Marker** Similar to user Tag
 - [x] **Improved History of user** 
+- [ ] **Icon for mode of travel**
 ### Real-time
 
 - [ ] **SignalR push** — replace polling with Azure SignalR Service. The `PUT /location` write path already has a clear commit point; a SignalR hub notification can be emitted there. Polling endpoint stays as fallback.
