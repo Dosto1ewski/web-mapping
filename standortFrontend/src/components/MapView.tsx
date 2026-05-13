@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { MemberLocationDto, MarkerDto } from '../api/types';
 import type { Session } from '../state/session';
+import type { RouteProfile } from '../api/graphhopper';
 
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -150,6 +151,10 @@ interface Props {
   onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
   showNametags: boolean;
   ownLocation: { lat: number; lng: number } | null;
+  activeRouteMarkerId: string | null;
+  activeRouteProfile: RouteProfile | null;
+  routeGeometry: [number, number][] | null;
+  onRouteRequest: (markerId: string, profile: RouteProfile) => void;
 }
 
 function createOwnIcon(color: string): L.DivIcon {
@@ -180,6 +185,10 @@ export default function MapView({
   onLocationDragEnd,
   showNametags,
   ownLocation,
+  activeRouteMarkerId,
+  activeRouteProfile,
+  routeGeometry,
+  onRouteRequest,
 }: Props) {
   const ownMemberId = session?.memberId ?? null;
 
@@ -250,6 +259,7 @@ export default function MapView({
       {markers.map((marker) => {
         const pos: [number, number] = [marker.lat, marker.lng];
         const icon = createColoredIcon(marker.color ?? '#9ca3af');
+        const isActive = marker.markerId === activeRouteMarkerId;
         return (
           <Marker key={marker.markerId} position={pos} icon={icon}>
             <Popup>
@@ -257,19 +267,41 @@ export default function MapView({
                 <strong>{marker.name}</strong>
                 {marker.notes && <p className="marker-popup-notes">{marker.notes}</p>}
                 {session && (
-                  <button
-                    className="marker-delete-btn"
-                    onClick={() => onDeleteMarker(marker.markerId)}
-                    title="Marker löschen"
-                  >
-                    <TrashIcon />
-                  </button>
+                  <>
+                    <div className="route-profile-row">
+                      {(['foot', 'bike', 'car'] as RouteProfile[]).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          className={`route-profile-btn${isActive && activeRouteProfile === p ? ' selected' : ''}`}
+                          onClick={() => onRouteRequest(marker.markerId, p)}
+                          title={profileLabel(p)}
+                        >
+                          <ProfileIcon profile={p} />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className="marker-delete-btn"
+                      onClick={() => onDeleteMarker(marker.markerId)}
+                      title="Marker löschen"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </>
                 )}
               </div>
             </Popup>
           </Marker>
         );
       })}
+
+      {routeGeometry && routeGeometry.length > 1 && (
+        <Polyline
+          positions={routeGeometry}
+          pathOptions={{ color: '#1d7af3', weight: 5, opacity: 0.85 }}
+        />
+      )}
 
       {placingLocation && (
         <Marker
@@ -286,6 +318,44 @@ export default function MapView({
         </Marker>
       )}
     </MapContainer>
+  );
+}
+
+function profileLabel(p: RouteProfile): string {
+  if (p === 'foot') return 'Zu Fuß';
+  if (p === 'bike') return 'Fahrrad';
+  return 'Auto';
+}
+
+function ProfileIcon({ profile }: { profile: RouteProfile }) {
+  if (profile === 'foot') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="13" cy="4" r="2" />
+        <path d="M11 21l1-7-3-2-1 4-3 1" />
+        <path d="M12 14l3 3 4 1" />
+        <path d="M9 9l3-3 4 2 3-1" />
+      </svg>
+    );
+  }
+  if (profile === 'bike') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="5.5" cy="17.5" r="3.5" />
+        <circle cx="18.5" cy="17.5" r="3.5" />
+        <path d="M15 6l-3 6h6l-3-6z" />
+        <path d="M9 6h3l3 6-5 0L5.5 17.5" />
+        <path d="M14 6h2" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 17H3v-4l2-5h14l2 5v4h-2" />
+      <circle cx="7" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
+      <path d="M5 13h14" />
+    </svg>
   );
 }
 

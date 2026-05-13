@@ -5,6 +5,7 @@ export interface Settings {
   markerFetchSec: number;
   locationUpdateSec: number;
   showNametags: boolean;
+  graphhopperToken: string;
 }
 
 const DEFAULTS: Settings = {
@@ -12,6 +13,7 @@ const DEFAULTS: Settings = {
   markerFetchSec: 20,
   locationUpdateSec: 20,
   showNametags: true,
+  graphhopperToken: '',
 };
 
 const STORAGE_KEY = 'standort_settings';

@@ -1,6 +1,30 @@
 import { useRef, useState, useEffect } from 'react';
 import type { Settings } from '../state/settings';
 
+function TokenInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="token-input-row">
+      <input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="API-Token einfügen"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <button
+        type="button"
+        className="token-toggle"
+        onClick={() => setShow((v) => !v)}
+        title={show ? 'Verbergen' : 'Anzeigen'}
+      >
+        {show ? 'Verbergen' : 'Anzeigen'}
+      </button>
+    </div>
+  );
+}
+
 interface Props {
   settings: Settings;
   onUpdate: (patch: Partial<Settings>) => void;
@@ -79,6 +103,23 @@ export default function SettingsPanel({ settings, onUpdate }: Props) {
               checked={settings.showNametags}
               onChange={(e) => onUpdate({ showNametags: e.target.checked })}
             />
+          </label>
+
+          <div className="settings-section-title">Navigation</div>
+          <label className="settings-row settings-row-stacked">
+            <span>GraphHopper API-Token</span>
+            <TokenInput
+              value={settings.graphhopperToken}
+              onChange={(v) => onUpdate({ graphhopperToken: v })}
+            />
+            <a
+              className="settings-hint-link"
+              href="https://www.graphhopper.com/dashboard/"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Token hier erstellen
+            </a>
           </label>
         </div>
       )}

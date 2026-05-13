@@ -453,3 +453,140 @@ html,
 .marker-delete-btn:hover {
   background: #b91c1c !important;
 }
+
+/* ── Route profile buttons in marker popup ─────────────────── */
+
+.route-profile-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.route-profile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px !important;
+  height: 30px;
+  padding: 0 !important;
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.route-profile-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+.route-profile-btn.selected {
+  background: #1d7af3 !important;
+  color: white !important;
+  border-color: #1d7af3;
+}
+
+/* ── Route overlay (top center) ─────────────────────────────── */
+
+.route-overlay {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 8px 8px 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.route-overlay-glyph {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.route-overlay-stats {
+  white-space: nowrap;
+}
+
+.route-overlay-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px !important;
+  height: 26px;
+  padding: 0 !important;
+  border: none;
+  border-radius: 50%;
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.route-overlay-close:hover {
+  background: #cbd5e1 !important;
+}
+
+/* ── Settings: token input + section title ──────────────────── */
+
+.settings-section-title {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+}
+
+.settings-row-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.token-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.token-input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  margin: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.token-toggle {
+  width: auto !important;
+  padding: 4px 8px !important;
+  background: #475569 !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+.token-toggle:hover {
+  background: #334155 !important;
+}
+
+.settings-hint-link {
+  font-size: 11px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.settings-hint-link:hover {
+  text-decoration: underline;
+}

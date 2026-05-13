@@ -5,12 +5,27 @@ import { useSettings } from './state/settings';
 import { usePollLocations } from './hooks/usePollLocations';
 import { usePollMarkers } from './hooks/usePollMarkers';
 import { createMarker, deleteMarker, ApiException } from './api/client';
+import { fetchRoute, formatDistance, formatDuration, GraphHopperError } from './api/graphhopper';
+import type { RouteProfile } from './api/graphhopper';
 import Lobby from './components/Lobby';
 import MapView from './components/MapView';
 import MemberControls from './components/MemberControls';
 import SettingsPanel from './components/SettingsPanel';
 import MarkerDialog from './components/MarkerDialog';
 import type { Session } from './state/session';
+
+function RouteProfileGlyph({ profile }: { profile: RouteProfile }) {
+  const label = profile === 'foot' ? '🚶' : profile === 'bike' ? '🚴' : '🚗';
+  return <span className="route-overlay-glyph" aria-hidden="true">{label}</span>;
+}
+
+interface ActiveRoute {
+  markerId: string;
+  profile: RouteProfile;
+  geometry: [number, number][];
+  distanceM: number;
+  timeMs: number;
+}
 
 export default function App() {
   const { session, setSession, clearSession } = useSession();
@@ -22,6 +37,7 @@ export default function App() {
   const [placingLocation, setPlacingLocation] = useState(false);
   const [locationDragPos, setLocationDragPos] = useState<{ lat: number; lng: number }>({ lat: 49.0069, lng: 8.4037 });
   const [ownLocation, setOwnLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
 
   const { members, error: locError } = usePollLocations(
     session?.groupId ?? null,
@@ -55,6 +71,7 @@ export default function App() {
     setPlacingLocation(false);
     setPendingCoords(null);
     setOwnLocation(null);
+    setActiveRoute(null);
     setStatus('Gruppe verlassen.');
   }
 
@@ -65,6 +82,7 @@ export default function App() {
     setPlacingLocation(false);
     setPendingCoords(null);
     setOwnLocation(null);
+    setActiveRoute(null);
     setStatus('Sitzung abgelaufen — ein anderes Gerät hat sich mit diesem Namen angemeldet.');
   }
 
@@ -94,6 +112,37 @@ export default function App() {
     });
     setPendingCoords(null);
     refreshMarkers();
+  }
+
+  useEffect(() => {
+    if (activeRoute && !markers.some((m) => m.markerId === activeRoute.markerId)) {
+      setActiveRoute(null);
+    }
+  }, [markers, activeRoute]);
+
+  async function handleRouteRequest(markerId: string, profile: RouteProfile) {
+    const target = markers.find((m) => m.markerId === markerId);
+    if (!target) return;
+    const start =
+      ownLocation ??
+      (session ? members.find((m) => m.memberId === session.memberId)?.currentLocation ?? null : null);
+    if (!start) {
+      setStatus('Eigenen Standort teilen, um Route zu berechnen.');
+      return;
+    }
+    try {
+      const result = await fetchRoute(
+        settings.graphhopperToken,
+        { lat: start.lat, lng: start.lng },
+        { lat: target.lat, lng: target.lng },
+        profile,
+      );
+      setActiveRoute({ markerId, profile, ...result });
+      setStatus('');
+    } catch (err) {
+      if (err instanceof GraphHopperError) setStatus(err.message);
+      else setStatus(err instanceof Error ? err.message : 'Routing fehlgeschlagen.');
+    }
   }
 
   async function handleDeleteMarker(markerId: string) {
@@ -148,7 +197,28 @@ export default function App() {
         onLocationDragEnd={setLocationDragPos}
         showNametags={settings.showNametags}
         ownLocation={ownLocation}
+        activeRouteMarkerId={activeRoute?.markerId ?? null}
+        activeRouteProfile={activeRoute?.profile ?? null}
+        routeGeometry={activeRoute?.geometry ?? null}
+        onRouteRequest={handleRouteRequest}
       />
+
+      {activeRoute && (
+        <div className="route-overlay">
+          <RouteProfileGlyph profile={activeRoute.profile} />
+          <span className="route-overlay-stats">
+            {formatDistance(activeRoute.distanceM)} · {formatDuration(activeRoute.timeMs)}
+          </span>
+          <button
+            className="route-overlay-close"
+            onClick={() => setActiveRoute(null)}
+            title="Route schließen"
+            aria-label="Route schließen"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {pendingCoords && (
         <MarkerDialog
