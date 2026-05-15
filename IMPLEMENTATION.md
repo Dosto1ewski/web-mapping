@@ -266,7 +266,7 @@ Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern ü
 ## Future tasks
 
 ## Bugs
-- [ ] **Sometimes the location of others users is not displayed**
+- [X] **Sometimes the location of others users is not displayed**
 ### Security hardening
 
 - [ ] **Read token for GET /locations** — require a group-level read token so that knowing `groupId` alone is not sufficient. Useful once groups are used in more public contexts.
@@ -279,8 +279,8 @@ Bisher wurde der eigene Standort zusammen mit allen anderen Gruppenmigliedern ü
 ### Features
 - [X] **User Management** — Allow Update location only from the last browser section. "Logout" all other session, when they try to use this method. To assure only one 
   Active session per username.
-- [ ] **Jump to my current location Button** Wie der blaue Pfeil in Maps unten rechts
-- [ ] **Navigation / routing to Markers** — frontend shows route and ETA to markers. Voraussetzung (eigener Live-Standort) ist implementiert.
+- [X] **Jump to my current location Button** Wie der blaue Pfeil in Maps unten rechts
+- [X] **Navigation / routing to Markers** — frontend shows route and ETA to markers. Voraussetzung (eigener Live-Standort) ist implementiert.
 Using graphhopper:
 POST: https://graphhopper.com/api/l/route
 Example Body:

@@ -113,12 +113,15 @@ function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null
 
 function FitBounds({ members }: { members: MemberLocationDto[] }) {
   const map = useMap();
+  const hasFit = useRef(false);
   useEffect(() => {
+    if (hasFit.current) return;
     const points = members
       .filter((m) => m.currentLocation != null)
       .map((m) => [m.currentLocation!.lat, m.currentLocation!.lng] as [number, number]);
     if (points.length > 0) {
       map.fitBounds(L.latLngBounds(points), { maxZoom: 16, padding: [40, 40] });
+      hasFit.current = true;
     }
   }, [members, map]);
   return null;

@@ -13,7 +13,11 @@ export function usePollLocations(groupId: string | null, intervalMs = 5000) {
       const data = await getLocations(groupId, versionRef.current);
       if (data) {
         versionRef.current = data.version;
-        setMembers(data.members);
+        setMembers((prev) => {
+          const merged = new Map(prev.map((m) => [m.memberId, m]));
+          for (const m of data.members) merged.set(m.memberId, m);
+          return Array.from(merged.values());
+        });
         setError(null);
       }
     } catch (err) {
