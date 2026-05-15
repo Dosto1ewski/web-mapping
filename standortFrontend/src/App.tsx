@@ -49,7 +49,7 @@ export default function App() {
     settings.markerFetchSec * 1000,
   );
 
-  const defaultInviteCode = new URL(location.href).searchParams.get('invite') ?? undefined;
+  const defaultInviteCode = new URL(window.location.href).searchParams.get('invite') ?? undefined;
 
   useEffect(() => {
     if (locError) setStatus(locError);

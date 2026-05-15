@@ -63,8 +63,19 @@ export default function MemberControls({
   );
 
   const inviteLink = inviteCode
-    ? `${location.origin}/?invite=${inviteCode}`
-    : `${location.origin}/?invite=`;
+    ? `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(inviteCode)}`
+    : '';
+
+  async function handleCopyInviteLink() {
+    if (!inviteLink) return;
+
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      onStatus('Einladungslink kopiert.');
+    } catch {
+      onStatus(inviteLink);
+    }
+  }
 
   if (collapsed) {
     return (
@@ -116,10 +127,17 @@ export default function MemberControls({
       <div className="member-name">{session.displayName}</div>
       {inviteCode && (
         <div className="invite-row">
-          <span>Code: </span>
-          <a href={inviteLink} className="invite-link">
-            {inviteCode}
-          </a>
+          <span>
+            Code: <strong>{inviteCode}</strong>
+          </span>
+          <div className="invite-actions">
+            <a href={inviteLink} className="invite-link">
+              Einladungslink
+            </a>
+            <button type="button" className="invite-copy-btn" onClick={handleCopyInviteLink}>
+              Kopieren
+            </button>
+          </div>
         </div>
       )}
       <div className="control-row">

@@ -202,14 +202,39 @@ html,
 }
 
 .invite-row {
+  display: grid;
+  gap: 6px;
   font-size: 13px;
   color: #555;
+}
+
+.invite-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .invite-link {
   color: #2563eb;
   text-decoration: none;
   font-weight: 500;
+}
+
+.invite-link:hover {
+  text-decoration: underline;
+}
+
+.invite-copy-btn {
+  width: auto !important;
+  padding: 4px 8px !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.invite-copy-btn:hover {
+  background: #e2e8f0 !important;
 }
 
 .control-row {
