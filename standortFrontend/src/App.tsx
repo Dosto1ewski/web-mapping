@@ -38,6 +38,7 @@ export default function App() {
   const [locationDragPos, setLocationDragPos] = useState<{ lat: number; lng: number }>({ lat: 49.0069, lng: 8.4037 });
   const [ownLocation, setOwnLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   const { members, error: locError } = usePollLocations(
     session?.groupId ?? null,
@@ -161,26 +162,43 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="panel">
-        {!session ? (
-          <Lobby defaultInviteCode={defaultInviteCode} onJoined={handleJoined} />
-        ) : (
-          <MemberControls
-            session={session}
-            inviteCode={inviteCode}
-            onLeave={handleLeave}
-            onSessionInvalidated={handleSessionInvalidated}
-            onStatus={setStatus}
-            placingMarker={placingMarker}
-            onTogglePlacingMarker={() => setPlacingMarker((v) => !v)}
-            locationUpdateIntervalMs={settings.locationUpdateSec * 1000}
-            placingLocation={placingLocation}
-            onTogglePlacingLocation={handleTogglePlacingLocation}
-            locationDragPos={locationDragPos}
-            onOwnLocation={setOwnLocation}
-          />
-        )}
-        {status && <p className="status">{status}</p>}
+      <div className={`panel${panelCollapsed ? ' panel--collapsed' : ''}`}>
+        <div className="panel-body">
+          {!session ? (
+            !panelCollapsed ? (
+              <Lobby defaultInviteCode={defaultInviteCode} onJoined={handleJoined} />
+            ) : null
+          ) : (
+            <MemberControls
+              session={session}
+              inviteCode={inviteCode}
+              onLeave={handleLeave}
+              onSessionInvalidated={handleSessionInvalidated}
+              onStatus={setStatus}
+              placingMarker={placingMarker}
+              onTogglePlacingMarker={() => setPlacingMarker((v) => !v)}
+              locationUpdateIntervalMs={settings.locationUpdateSec * 1000}
+              placingLocation={placingLocation}
+              onTogglePlacingLocation={handleTogglePlacingLocation}
+              locationDragPos={locationDragPos}
+              onOwnLocation={setOwnLocation}
+              collapsed={panelCollapsed}
+            />
+          )}
+          {!panelCollapsed && status && <p className="status">{status}</p>}
+        </div>
+        <button
+          className="panel-collapse-toggle"
+          onClick={() => setPanelCollapsed((v) => !v)}
+          title={panelCollapsed ? 'Panel öffnen' : 'Panel schließen'}
+          aria-label={panelCollapsed ? 'Panel öffnen' : 'Panel schließen'}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            {panelCollapsed
+              ? <polyline points="9 18 15 12 9 6" />
+              : <polyline points="15 18 9 12 15 6" />}
+          </svg>
+        </button>
       </div>
 
       <SettingsPanel settings={settings} onUpdate={updateSettings} />

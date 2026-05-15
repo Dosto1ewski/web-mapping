@@ -16,6 +16,7 @@ interface Props {
   onTogglePlacingLocation: () => void;
   locationDragPos: { lat: number; lng: number };
   onOwnLocation: (loc: { lat: number; lng: number }) => void;
+  collapsed?: boolean;
 }
 
 export default function MemberControls({
@@ -31,6 +32,7 @@ export default function MemberControls({
   onTogglePlacingLocation,
   locationDragPos,
   onOwnLocation,
+  collapsed = false,
 }: Props) {
 
   const sendLocation = useCallback(
@@ -63,6 +65,46 @@ export default function MemberControls({
   const inviteLink = inviteCode
     ? `${location.origin}/?invite=${inviteCode}`
     : `${location.origin}/?invite=`;
+
+  if (collapsed) {
+    return (
+      <div className="member-controls-icons">
+        <div className="member-initial-badge">{session.displayName[0].toUpperCase()}</div>
+        <button
+          type="button"
+          className="icon-action-btn"
+          onClick={getCurrent}
+          title="Standort teilen"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L4 9h5v7h6V9h5L12 2z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className={`icon-action-btn${placingMarker ? ' placing-active' : ''}`}
+          onClick={onTogglePlacingMarker}
+          title={placingMarker ? 'Marker abbrechen' : 'Marker setzen'}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="icon-action-btn leave-icon-btn"
+          onClick={onLeave}
+          title="Verlassen"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   async function handleConfirmManualLocation() {
     await sendLocation({ latitude: locationDragPos.lat, longitude: locationDragPos.lng, accuracy: 0 });
