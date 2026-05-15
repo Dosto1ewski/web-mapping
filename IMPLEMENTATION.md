@@ -316,14 +316,15 @@ Example Body:
 - [ ] **Invitelink statt URL + TOKEN** — 
 
 ### Design
-- [ ] **Improve design, and UX** — Improve design, and UX like for setting own location
-- [ ] **Pop Up** — Style und einklappbar
+- [ ] **Improve design, and UX** — Improve design, and UX
+- [X] **Pop Up** — einklappbar
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
 - [x] **Show Nametags** — Have a checkbox in Settings, which makes it, that the User-Location-markers have their nametag hovering besides them. Default is: on
 - [ ] **Show Nametag for Marker** Similar to user Tag
-- [x] **Improved History of user** 
+- [ ] **Improved History of user** Not last 5 pings, but rather last 10mins?
 - [ ] **Icon for mode of travel**
-### Real-time
 
+Only in the Future:
+### Real-time
 - [ ] **SignalR push** — replace polling with Azure SignalR Service. The `PUT /location` write path already has a clear commit point; a SignalR hub notification can be emitted there. Polling endpoint stays as fallback.
 - [ ] **Server-Sent Events (SSE)** — lighter-weight alternative to SignalR for read-only push. Function holds open an SSE stream and pushes on group version change.
