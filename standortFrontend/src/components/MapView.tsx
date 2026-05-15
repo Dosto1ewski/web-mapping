@@ -1,4 +1,4 @@
-import { useEffect, Fragment } from 'react';
+import { useEffect, useRef, Fragment } from 'react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { MemberLocationDto, MarkerDto } from '../api/types';
@@ -105,6 +105,12 @@ function createColoredIcon(color: string): L.DivIcon {
   });
 }
 
+function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  useEffect(() => { mapRef.current = map; }, [map, mapRef]);
+  return null;
+}
+
 function FitBounds({ members }: { members: MemberLocationDto[] }) {
   const map = useMap();
   useEffect(() => {
@@ -191,14 +197,31 @@ export default function MapView({
   onRouteRequest,
 }: Props) {
   const ownMemberId = session?.memberId ?? null;
+  const mapRef = useRef<L.Map | null>(null);
+
+  function handleLocateMe() {
+    const map = mapRef.current;
+    if (!map) return;
+    if (ownLocation) {
+      map.flyTo([ownLocation.lat, ownLocation.lng], Math.max(map.getZoom(), 16), { animate: true, duration: 1 });
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], Math.max(map.getZoom(), 16), { animate: true, duration: 1 }),
+        () => {},
+        { enableHighAccuracy: true },
+      );
+    }
+  }
 
   return (
+    <>
     <MapContainer center={[49.0069, 8.4037]} zoom={13} className="leaflet-map">
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
       />
+      <MapRefCapture mapRef={mapRef} />
       <FitBounds members={members} />
       <MapClickHandler placingMarker={placingMarker} onMapClick={onMapClick} />
 
@@ -318,6 +341,17 @@ export default function MapView({
         </Marker>
       )}
     </MapContainer>
+    <button
+      className="locate-me-btn"
+      onClick={handleLocateMe}
+      title="Zu meinem Standort springen"
+      aria-label="Zu meinem Standort springen"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    </button>
+    </>
   );
 }
 

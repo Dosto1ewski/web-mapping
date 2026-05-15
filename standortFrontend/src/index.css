@@ -535,6 +535,33 @@ html,
   background: #cbd5e1 !important;
 }
 
+/* ── Locate-me button (bottom right, outside MapContainer) ─── */
+
+.locate-me-btn {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #1a73e8;
+  color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s;
+}
+
+.locate-me-btn:hover {
+  background: #1557b0;
+}
+
 /* ── Settings: token input + section title ──────────────────── */
 
 .settings-section-title {
