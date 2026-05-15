@@ -5,13 +5,15 @@ public sealed record CreateGroupResponse(
     string InviteCode,
     string MemberId,
     string MemberToken,
-    string DisplayName);
+    string DisplayName,
+    int HistoryDurationMinutes);
 
 public sealed record JoinGroupResponse(
     string GroupId,
     string MemberId,
     string MemberToken,
-    string DisplayName);
+    string DisplayName,
+    int HistoryDurationMinutes);
 
 public sealed record GeoPointDto(
     double Lat,

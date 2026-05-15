@@ -29,5 +29,8 @@ public sealed class MemberDocument
 
     public long LastUpdatedVersion { get; set; }
 
+    // Absent in legacy docs: System.Text.Json leaves missing properties at this initializer.
+    public int HistoryDurationMinutes { get; set; } = 15;
+
     public static string IdFor(string memberId) => $"{IdPrefix}{memberId}";
 }

@@ -18,7 +18,10 @@ public class LocationServiceTests
 
     private LocationService BuildService() => new(_groupRepo, _tokenHasher, _clock);
 
-    private Member BuildMember(GeoCoordinate? current = null, IReadOnlyList<GeoCoordinate>? history = null) => new()
+    private Member BuildMember(
+        GeoCoordinate? current = null,
+        IReadOnlyList<GeoCoordinate>? history = null,
+        int historyDurationMinutes = 15) => new()
     {
         MemberId = "m1",
         GroupId = "g1",
@@ -29,7 +32,23 @@ public class LocationServiceTests
         CurrentLocation = current,
         RecentHistory = history ?? Array.Empty<GeoCoordinate>(),
         LastUpdatedVersion = 0,
+        HistoryDurationMinutes = historyDurationMinutes,
     };
+
+    // Wires _groupRepo.ApplyMemberWriteAsync to run the mutator against `existing` and capture the result.
+    private void CaptureMemberWrite(Member existing, Action<Member> onCaptured, long groupVersion = 0)
+    {
+        _groupRepo.ApplyMemberWriteAsync("g1", "m1",
+                Arg.Any<Func<Group, Member?, Member>>(), Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                var mutator = ci.Arg<Func<Group, Member?, Member>>();
+                var grp = new Group { GroupId = "g1", Name = "n", CreatedAt = _clock.UtcNow, Version = groupVersion };
+                var result = mutator(grp, existing);
+                onCaptured(result);
+                return Task.FromResult(result);
+            });
+    }
 
     [Fact]
     public async Task UpdateLocation_RejectsBadToken()
@@ -86,36 +105,130 @@ public class LocationServiceTests
     }
 
     [Fact]
-    public async Task UpdateLocation_HistoryCappedAtFive()
+    public async Task UpdateLocation_DropsHistoryEntriesOlderThanDurationWindow()
     {
+        // Member keeps a 15-minute window.
+        var stale = new GeoCoordinate(40, 8, 10, _clock.UtcNow.AddMinutes(-30), _clock.UtcNow.AddMinutes(-30));
+        var fresh = new GeoCoordinate(41, 8, 10, _clock.UtcNow.AddMinutes(-5), _clock.UtcNow.AddMinutes(-5));
         var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
-        var fullHistory = Enumerable.Range(0, 5)
-            .Select(i => new GeoCoordinate(40 + i, 8, 10, _clock.UtcNow.AddMinutes(-10 + i), _clock.UtcNow.AddMinutes(-10 + i)))
-            .ToList();
 
-        var existing = BuildMember(current: prev, history: fullHistory);
+        var existing = BuildMember(current: prev, history: new[] { stale, fresh }, historyDurationMinutes: 15);
         _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
         _tokenHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
         Member? captured = null;
-        _groupRepo.ApplyMemberWriteAsync("g1", "m1",
-                Arg.Any<Func<Group, Member?, Member>>(), Arg.Any<CancellationToken>())
-            .Returns(ci =>
-            {
-                var mutator = ci.Arg<Func<Group, Member?, Member>>();
-                var grp = new Group { GroupId = "g1", Name = "n", CreatedAt = _clock.UtcNow, Version = 5 };
-                captured = mutator(grp, existing);
-                return Task.FromResult(captured);
-            });
+        CaptureMemberWrite(existing, m => captured = m);
 
         var svc = BuildService();
         await svc.UpdateLocationAsync("g1", "m1", "ok",
             new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
 
-        captured!.RecentHistory.Should().HaveCount(LocationService.RecentHistoryMax);
-        // Oldest entry of fullHistory should have been dropped; newest history entry is `prev`.
-        captured.RecentHistory.Last().Should().Be(prev);
-        captured.RecentHistory.Should().NotContain(fullHistory[0]); // dropped
+        captured!.RecentHistory.Should().Equal(fresh, prev); // stale dropped, oldest-first preserved
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WithZeroDuration_ClearsHistory()
+    {
+        var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow.AddSeconds(-30), _clock.UtcNow.AddSeconds(-30));
+        var existing = BuildMember(current: prev, history: Array.Empty<GeoCoordinate>(), historyDurationMinutes: 0);
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
+        _tokenHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        Member? captured = null;
+        CaptureMemberWrite(existing, m => captured = m);
+
+        var svc = BuildService();
+        await svc.UpdateLocationAsync("g1", "m1", "ok",
+            new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
+
+        captured!.RecentHistory.Should().BeEmpty();
+        captured.CurrentLocation!.Lat.Should().Be(50);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_HistoryClampedToHardCap()
+    {
+        var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow, _clock.UtcNow);
+        // All within the 2880-minute window, but more than the hard cap.
+        var bigHistory = Enumerable.Range(0, LocationService.HistoryHardCap + 50)
+            .Select(i => new GeoCoordinate(40, 8, 10, _clock.UtcNow.AddSeconds(-i), _clock.UtcNow.AddSeconds(-i)))
+            .Reverse()
+            .ToList();
+
+        var existing = BuildMember(current: prev, history: bigHistory, historyDurationMinutes: 2880);
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
+        _tokenHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        Member? captured = null;
+        CaptureMemberWrite(existing, m => captured = m);
+
+        var svc = BuildService();
+        await svc.UpdateLocationAsync("g1", "m1", "ok",
+            new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
+
+        captured!.RecentHistory.Should().HaveCount(LocationService.HistoryHardCap);
+        captured.RecentHistory.Last().Should().Be(prev); // newest kept
+    }
+
+    [Fact]
+    public async Task UpdateMemberSettings_PersistsDuration()
+    {
+        var existing = BuildMember(historyDurationMinutes: 15);
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
+        _tokenHasher.Verify("ok", "hash").Returns(true);
+
+        Member? captured = null;
+        CaptureMemberWrite(existing, m => captured = m);
+
+        var svc = BuildService();
+        await svc.UpdateMemberSettingsAsync("g1", "m1", "ok",
+            new UpdateMemberSettingsRequest(60), CancellationToken.None);
+
+        captured!.HistoryDurationMinutes.Should().Be(60);
+    }
+
+    [Fact]
+    public async Task UpdateMemberSettings_RejectsBadToken()
+    {
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(BuildMember());
+        _tokenHasher.Verify("bad", "hash").Returns(false);
+
+        var svc = BuildService();
+        var act = () => svc.UpdateMemberSettingsAsync("g1", "m1", "bad",
+            new UpdateMemberSettingsRequest(30), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidTokenException>();
+    }
+
+    [Fact]
+    public async Task DeleteHistory_ClearsHistoryAndCurrentLocation()
+    {
+        var current = new GeoCoordinate(49, 8, 10, _clock.UtcNow, _clock.UtcNow);
+        var history = new[] { new GeoCoordinate(48, 8, 10, _clock.UtcNow.AddMinutes(-2), _clock.UtcNow.AddMinutes(-2)) };
+        var existing = BuildMember(current: current, history: history);
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
+        _tokenHasher.Verify("ok", "hash").Returns(true);
+
+        Member? captured = null;
+        CaptureMemberWrite(existing, m => captured = m);
+
+        var svc = BuildService();
+        await svc.DeleteHistoryAsync("g1", "m1", "ok", CancellationToken.None);
+
+        captured!.CurrentLocation.Should().BeNull();
+        captured.RecentHistory.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteHistory_RejectsBadToken()
+    {
+        _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(BuildMember());
+        _tokenHasher.Verify("bad", "hash").Returns(false);
+
+        var svc = BuildService();
+        var act = () => svc.DeleteHistoryAsync("g1", "m1", "bad", CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidTokenException>();
     }
 
     [Fact]

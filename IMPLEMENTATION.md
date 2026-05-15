@@ -315,15 +315,16 @@ Example Body:
 - [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Cool wäre dann eine "Gruppenmemberliste zu haben, in der man auf Navigate to Member klicken kann, damit man nicht auf der Karte nach User suchen muss.
   - [ ] **Group-Member-List** Which shows all Members of the group and when they last updatet their location.
 - [ ] **Marker List** Shows a list of all Markers, so you don't have to search for them on the map
-- [ ] **Invitelink statt URL + TOKEN** — 
+- [X] **Invitelink statt URL + TOKEN** — 
 
 ### Design
 - [ ] **Improve design, and UX** — Improve design, and UX
 - [X] **Pop Up** — einklappbar
 - [ ] **Icons for user Markers** — Allow users to select an icon to make differentiating between markers easier
+- [ ] **Location last updated at** - When clicking on a User-Location, you will not only see their name, but when they send their last status update
 - [x] **Show Nametags** — Have a checkbox in Settings, which makes it, that the User-Location-markers have their nametag hovering besides them. Default is: on
 - [ ] **Show Nametag for Marker** Similar to user Tag
-- [ ] **Improved History of user** Not last 5 pings, but rather last 10mins?
+- [X] **Improved History of user** Not last 5 pings, but rather last 10mins?
 - [ ] **Icon for mode of travel**
 
 Only in the Future:

@@ -1,7 +1,14 @@
-import { useCallback } from 'react';
-import { updateLocation, ApiException } from '../api/client';
+import { useCallback, useState } from 'react';
+import {
+  updateLocation,
+  updateMemberSettings,
+  deleteMemberHistory,
+  ApiException,
+} from '../api/client';
 import { useGeolocation } from '../hooks/useGeolocation';
 import type { Session } from '../state/session';
+
+const MAX_HISTORY_DURATION_MIN = 2880;
 
 interface Props {
   session: Session;
@@ -16,6 +23,7 @@ interface Props {
   onTogglePlacingLocation: () => void;
   locationDragPos: { lat: number; lng: number };
   onOwnLocation: (loc: { lat: number; lng: number }) => void;
+  onHistoryDurationChange: (minutes: number) => void;
   collapsed?: boolean;
 }
 
@@ -32,8 +40,10 @@ export default function MemberControls({
   onTogglePlacingLocation,
   locationDragPos,
   onOwnLocation,
+  onHistoryDurationChange,
   collapsed = false,
 }: Props) {
+  const [historyInput, setHistoryInput] = useState(String(session.historyDurationMinutes));
 
   const sendLocation = useCallback(
     async (coords: { latitude: number; longitude: number; accuracy: number }) => {
@@ -61,6 +71,42 @@ export default function MemberControls({
     sendLocation,
     locationUpdateIntervalMs,
   );
+
+  async function handleHistoryCommit() {
+    const parsed = Number(historyInput);
+    const clamped = Number.isFinite(parsed)
+      ? Math.max(0, Math.min(MAX_HISTORY_DURATION_MIN, Math.round(parsed)))
+      : session.historyDurationMinutes;
+    setHistoryInput(String(clamped));
+    if (clamped === session.historyDurationMinutes) return;
+    try {
+      await updateMemberSettings(session.groupId, session.memberId, session.memberToken, {
+        historyDurationMinutes: clamped,
+      });
+      onHistoryDurationChange(clamped);
+      onStatus(`Verlaufsdauer: ${clamped} Min.`);
+    } catch (err) {
+      if (err instanceof ApiException && err.status === 401) {
+        onSessionInvalidated();
+      } else {
+        onStatus(err instanceof Error ? err.message : 'Verlaufsdauer konnte nicht gespeichert werden.');
+      }
+    }
+  }
+
+  async function handleDeleteHistory() {
+    try {
+      await deleteMemberHistory(session.groupId, session.memberId, session.memberToken);
+      setAutoShare(false);
+      onStatus('Verlauf gelöscht, Standortfreigabe deaktiviert.');
+    } catch (err) {
+      if (err instanceof ApiException && err.status === 401) {
+        onSessionInvalidated();
+      } else {
+        onStatus(err instanceof Error ? err.message : 'Verlauf konnte nicht gelöscht werden.');
+      }
+    }
+  }
 
   const inviteLink = inviteCode
     ? `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(inviteCode)}`
@@ -151,6 +197,21 @@ export default function MemberControls({
           Auto
         </label>
       </div>
+      <label className="control-row history-duration-row">
+        Verlaufsdauer (Min.)
+        <input
+          type="number"
+          min={0}
+          max={MAX_HISTORY_DURATION_MIN}
+          value={historyInput}
+          onChange={(e) => setHistoryInput(e.target.value)}
+          onBlur={handleHistoryCommit}
+          title="0 = kein Verlauf, max. 2880 (48 h)"
+        />
+      </label>
+      <button type="button" className="secondary-btn" onClick={handleDeleteHistory}>
+        Verlauf löschen
+      </button>
       <button
         type="button"
         className={`secondary-btn${placingMarker ? ' placing-active' : ''}`}

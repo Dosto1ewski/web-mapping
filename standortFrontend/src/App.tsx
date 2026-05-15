@@ -182,6 +182,9 @@ export default function App() {
               onTogglePlacingLocation={handleTogglePlacingLocation}
               locationDragPos={locationDragPos}
               onOwnLocation={setOwnLocation}
+              onHistoryDurationChange={(minutes) =>
+                setSession({ ...session, historyDurationMinutes: minutes })
+              }
               collapsed={panelCollapsed}
             />
           )}

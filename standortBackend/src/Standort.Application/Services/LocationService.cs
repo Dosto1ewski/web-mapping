@@ -8,7 +8,15 @@ namespace Standort.Application.Services;
 
 public sealed class LocationService
 {
-    public const int RecentHistoryMax = 5;
+    /// <summary>
+    /// Hard upper bound on stored history entries, independent of the member's chosen
+    /// duration. Protects the member document from exceeding Cosmos DB's 2 MB item limit
+    /// when a member shares location at a high frequency over a long window.
+    /// </summary>
+    public const int HistoryHardCap = 500;
+
+    public const int DefaultHistoryDurationMinutes = 15;
+    public const int MaxHistoryDurationMinutes = 2880;
 
     private readonly IGroupRepository _groupRepo;
     private readonly ITokenHasher _tokenHasher;
@@ -56,19 +64,87 @@ public sealed class LocationService
                         $"Member '{memberId}' disappeared between read and write.");
                 }
 
-                var newHistory = BuildShiftedHistory(existing.CurrentLocation, existing.RecentHistory);
+                var newHistory = BuildShiftedHistory(
+                    existing.CurrentLocation,
+                    existing.RecentHistory,
+                    existing.HistoryDurationMinutes,
+                    now);
 
-                return new Member
+                return existing with
                 {
-                    MemberId = existing.MemberId,
-                    GroupId = existing.GroupId,
-                    DisplayName = existing.DisplayName,
-                    DisplayNameNormalized = existing.DisplayNameNormalized,
-                    TokenHash = existing.TokenHash,
-                    TokenIssuedAt = existing.TokenIssuedAt,
                     CurrentLocation = newPoint,
                     RecentHistory = newHistory,
-                    LastUpdatedVersion = existing.LastUpdatedVersion,
+                };
+            },
+            ct);
+    }
+
+    /// <summary>
+    /// Updates the member's history-duration preference. Does not prune existing history —
+    /// pruning is applied on the member's next location update.
+    /// </summary>
+    public async Task UpdateMemberSettingsAsync(
+        string groupId,
+        string memberId,
+        string presentedToken,
+        UpdateMemberSettingsRequest request,
+        CancellationToken ct)
+    {
+        var member = await _groupRepo.ReadMemberAsync(groupId, memberId, ct)
+            ?? throw new MemberNotFoundException(groupId, memberId);
+
+        if (!_tokenHasher.Verify(presentedToken, member.TokenHash))
+        {
+            throw new InvalidTokenException();
+        }
+
+        await _groupRepo.ApplyMemberWriteAsync(
+            groupId,
+            memberId,
+            (group, existing) =>
+            {
+                if (existing is null)
+                {
+                    throw new ConcurrencyException(
+                        $"Member '{memberId}' disappeared between read and write.");
+                }
+                return existing with { HistoryDurationMinutes = request.HistoryDurationMinutes };
+            },
+            ct);
+    }
+
+    /// <summary>
+    /// Clears the member's stored history and current location. Auto-share is a client-only
+    /// concept; the caller (frontend) is responsible for switching it off locally.
+    /// </summary>
+    public async Task DeleteHistoryAsync(
+        string groupId,
+        string memberId,
+        string presentedToken,
+        CancellationToken ct)
+    {
+        var member = await _groupRepo.ReadMemberAsync(groupId, memberId, ct)
+            ?? throw new MemberNotFoundException(groupId, memberId);
+
+        if (!_tokenHasher.Verify(presentedToken, member.TokenHash))
+        {
+            throw new InvalidTokenException();
+        }
+
+        await _groupRepo.ApplyMemberWriteAsync(
+            groupId,
+            memberId,
+            (group, existing) =>
+            {
+                if (existing is null)
+                {
+                    throw new ConcurrencyException(
+                        $"Member '{memberId}' disappeared between read and write.");
+                }
+                return existing with
+                {
+                    CurrentLocation = null,
+                    RecentHistory = Array.Empty<GeoCoordinate>(),
                 };
             },
             ct);
@@ -101,23 +177,33 @@ public sealed class LocationService
     }
 
     // Convention: oldest entry first. The previously-current point becomes the newest
-    // history entry; the oldest entries are dropped when the buffer exceeds RecentHistoryMax.
+    // history entry. Entries older than the member's chosen duration window are dropped,
+    // then the buffer is clamped to HistoryHardCap as a document-size safety net.
     private static IReadOnlyList<GeoCoordinate> BuildShiftedHistory(
         GeoCoordinate? previousCurrent,
-        IReadOnlyList<GeoCoordinate> existingHistory)
+        IReadOnlyList<GeoCoordinate> existingHistory,
+        int historyDurationMinutes,
+        DateTimeOffset now)
     {
-        if (previousCurrent is null)
+        if (historyDurationMinutes <= 0)
         {
-            return existingHistory;
+            return Array.Empty<GeoCoordinate>();
         }
+
+        var cutoff = now - TimeSpan.FromMinutes(historyDurationMinutes);
         var combined = new List<GeoCoordinate>(existingHistory.Count + 1);
         combined.AddRange(existingHistory);
-        combined.Add(previousCurrent);
-        if (combined.Count <= RecentHistoryMax)
+        if (previousCurrent is not null)
         {
-            return combined;
+            combined.Add(previousCurrent);
         }
-        return combined.GetRange(combined.Count - RecentHistoryMax, RecentHistoryMax);
+
+        var kept = combined.Where(p => p.RecordedAt >= cutoff).ToList();
+        if (kept.Count > HistoryHardCap)
+        {
+            kept = kept.GetRange(kept.Count - HistoryHardCap, HistoryHardCap);
+        }
+        return kept;
     }
 
     private static MemberLocationDto MapMember(Member member) => new(

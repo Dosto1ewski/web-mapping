@@ -63,6 +63,7 @@ builder.Services.AddSingleton<MarkerService>();
 builder.Services.AddSingleton<IValidator<CreateGroupRequest>, CreateGroupRequestValidator>();
 builder.Services.AddSingleton<IValidator<JoinGroupRequest>, JoinGroupRequestValidator>();
 builder.Services.AddSingleton<IValidator<UpdateLocationRequest>, UpdateLocationRequestValidator>();
+builder.Services.AddSingleton<IValidator<UpdateMemberSettingsRequest>, UpdateMemberSettingsRequestValidator>();
 builder.Services.AddSingleton<IValidator<CreateMarkerRequest>, CreateMarkerRequestValidator>();
 
 var host = builder.Build();

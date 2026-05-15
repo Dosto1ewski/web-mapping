@@ -73,7 +73,8 @@ public sealed class GroupService
             InviteCode: inviteCode,
             MemberId: memberId,
             MemberToken: plainToken,
-            DisplayName: displayName);
+            DisplayName: displayName,
+            HistoryDurationMinutes: member.HistoryDurationMinutes);
     }
 
     public async Task<JoinGroupResponse> JoinGroupAsync(JoinGroupRequest request, CancellationToken ct)
@@ -88,7 +89,7 @@ public sealed class GroupService
         var tokenHash = _tokenHasher.Hash(plainToken);
         var now = _clock.UtcNow;
 
-        await _groupRepo.ApplyMemberWriteAsync(
+        var written = await _groupRepo.ApplyMemberWriteAsync(
             groupId,
             memberId,
             (group, existing) =>
@@ -110,18 +111,13 @@ public sealed class GroupService
                     };
                 }
 
-                // Reclaim: rotate token, keep displayName casing as latest, preserve location/history.
-                return new Member
+                // Reclaim: rotate token, keep displayName casing as latest,
+                // preserve location/history and the member's settings.
+                return existing with
                 {
-                    MemberId = existing.MemberId,
-                    GroupId = existing.GroupId,
                     DisplayName = displayName,
-                    DisplayNameNormalized = existing.DisplayNameNormalized,
                     TokenHash = tokenHash,
                     TokenIssuedAt = now,
-                    CurrentLocation = existing.CurrentLocation,
-                    RecentHistory = existing.RecentHistory,
-                    LastUpdatedVersion = existing.LastUpdatedVersion,
                 };
             },
             ct);
@@ -130,7 +126,8 @@ public sealed class GroupService
             GroupId: groupId,
             MemberId: memberId,
             MemberToken: plainToken,
-            DisplayName: displayName);
+            DisplayName: displayName,
+            HistoryDurationMinutes: written.HistoryDurationMinutes);
     }
 
     private async Task<string> ClaimInviteCodeAsync(string groupId, DateTimeOffset now, CancellationToken ct)

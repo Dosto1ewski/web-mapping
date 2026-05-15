@@ -10,6 +10,8 @@ public sealed record UpdateLocationRequest(
     double AccuracyMeters,
     DateTimeOffset RecordedAt);
 
+public sealed record UpdateMemberSettingsRequest(int HistoryDurationMinutes);
+
 public sealed record CreateMarkerRequest(
     string Name,
     double Lat,

@@ -9,6 +9,7 @@ export interface CreateGroupResponse {
   memberId: string;
   memberToken: string;
   displayName: string;
+  historyDurationMinutes: number;
 }
 
 export interface JoinGroupRequest {
@@ -21,6 +22,11 @@ export interface JoinGroupResponse {
   memberId: string;
   memberToken: string;
   displayName: string;
+  historyDurationMinutes: number;
+}
+
+export interface UpdateMemberSettingsRequest {
+  historyDurationMinutes: number;
 }
 
 export interface UpdateLocationRequest {

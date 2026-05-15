@@ -25,7 +25,13 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     try {
       const res = await createGroup({ name: groupName.trim(), createdByDisplayName: creatorName.trim() });
       onJoined(
-        { groupId: res.groupId, memberId: res.memberId, memberToken: res.memberToken, displayName: res.displayName },
+        {
+          groupId: res.groupId,
+          memberId: res.memberId,
+          memberToken: res.memberToken,
+          displayName: res.displayName,
+          historyDurationMinutes: res.historyDurationMinutes,
+        },
         res.inviteCode,
       );
     } catch (err) {
@@ -44,7 +50,13 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     setStatus('Beitreten...');
     try {
       const res = await joinGroup({ inviteCode: inviteCode.trim().toUpperCase(), displayName: joinName.trim() });
-      onJoined({ groupId: res.groupId, memberId: res.memberId, memberToken: res.memberToken, displayName: res.displayName });
+      onJoined({
+        groupId: res.groupId,
+        memberId: res.memberId,
+        memberToken: res.memberToken,
+        displayName: res.displayName,
+        historyDurationMinutes: res.historyDurationMinutes,
+      });
     } catch (err) {
       setStatus(err instanceof ApiException ? err.message : 'Fehler beim Beitreten.');
     } finally {

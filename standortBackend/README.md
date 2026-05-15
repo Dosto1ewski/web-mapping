@@ -71,7 +71,7 @@ Download the `.der` certificate and install it for `Local Computer`. Choose the 
 dotnet test
 ```
 
-All 42 unit tests run without any external dependencies.
+All 48 unit tests run without any external dependencies.
 
 ## API
 
@@ -114,7 +114,8 @@ Response `201 Created`:
   "inviteCode": "K792-CM78",
   "memberId": "BQP8JT4W174YH13A",
   "memberToken": "SUUWxlMD6MZR9NP1O1LTmT30th3Y8Y5EYkJh-D-V6Zg",
-  "displayName": "Antonin"
+  "displayName": "Antonin",
+  "historyDurationMinutes": 15
 }
 ```
 
@@ -152,9 +153,13 @@ Response `200 OK`:
   "groupId": "ad4541df-ea08-423a-b464-8567cbbde86e",
   "memberId": "P3SWDAQ45B5EH6TR",
   "memberToken": "v5V93FJYU7QGEwh5Lbi5qC3BzRIecuWZp5wZhSYvbuY",
-  "displayName": "Max"
+  "displayName": "Max",
+  "historyDurationMinutes": 15
 }
 ```
+
+`historyDurationMinutes` reflects the member's stored history-window setting; for an existing
+display name being reclaimed, the previously stored value is returned.
 
 Copy this member's `memberId` and `memberToken` if you want to update this member's location. Rejoining with an existing display name rotates the token ("newest session wins"). The old token returns `401` on subsequent location updates.
 
@@ -194,7 +199,12 @@ Validation rules:
 - `accuracyMeters` must be `>= 0`
 - `recordedAt` must be within the last 24 h and at most 60 s in the future
 
-The server keeps the last 5 location pings per member as a trail (`recentHistory`).
+The server keeps a trail of past location pings per member (`recentHistory`). On every location
+update the trail is pruned to the member's `historyDurationMinutes` window (see endpoint 8): any
+ping whose `recordedAt` is older than `now - historyDurationMinutes` is dropped. Pruning happens
+**only on a location update from that member** — a member who stops updating keeps their last
+trail until they update again. A hard cap of 500 entries always applies as a safety net,
+regardless of the chosen duration. The current location is always kept.
 
 ### 4. Get group locations
 
@@ -400,6 +410,73 @@ Possible error responses:
 
 - `401 Unauthorized` — missing/invalid bearer token
 - `404 Not Found` — group, member, or marker does not exist
+
+### 8. Update member settings
+
+Sets the member's history-window preference (`historyDurationMinutes`). The value is stored but
+existing history is **not** pruned immediately — pruning is applied on the member's next location
+update (endpoint 3).
+
+Method and URL:
+
+```text
+PUT http://localhost:7071/api/groups/{groupId}/members/{memberId}/settings
+```
+
+Headers:
+
+```text
+Content-Type: application/json
+Authorization: Bearer {memberToken}
+```
+
+Body:
+
+```json
+{
+  "historyDurationMinutes": 30
+}
+```
+
+Response `204 No Content`.
+
+Validation rules:
+
+- `historyDurationMinutes` in `[0, 2880]` (0 = no history kept; 2880 = 48 h). Default is `15`.
+
+Possible error responses:
+
+- `400 Bad Request` — validation failed or malformed JSON
+- `401 Unauthorized` — missing/invalid bearer token
+- `404 Not Found` — group or member does not exist
+
+### 9. Delete member history
+
+Clears the member's stored trail (`recentHistory`) **and** their `currentLocation`. Use this to
+fully stop sharing: the member disappears from the map until they send a new location update.
+Auto-share is a client-side concept — the frontend additionally switches its auto-share toggle
+off when this button is used.
+
+Method and URL:
+
+```text
+DELETE http://localhost:7071/api/groups/{groupId}/members/{memberId}/history
+```
+
+Headers:
+
+```text
+Authorization: Bearer {memberToken}
+```
+
+No body is required.
+
+Response `204 No Content`.
+
+Possible error responses:
+
+- `401 Unauthorized` — missing/invalid bearer token
+- `404 Not Found` — group or member does not exist
 
 ## Deployment
 

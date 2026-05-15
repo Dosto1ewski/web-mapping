@@ -13,4 +13,10 @@ public sealed record Member
     public GeoCoordinate? CurrentLocation { get; init; }
     public IReadOnlyList<GeoCoordinate> RecentHistory { get; init; } = Array.Empty<GeoCoordinate>();
     public long LastUpdatedVersion { get; init; }
+
+    /// <summary>
+    /// How many minutes of past location pings this member wants kept as a trail.
+    /// 0 = no history. Pruning is applied lazily on the member's next location update.
+    /// </summary>
+    public int HistoryDurationMinutes { get; init; } = 15;
 }

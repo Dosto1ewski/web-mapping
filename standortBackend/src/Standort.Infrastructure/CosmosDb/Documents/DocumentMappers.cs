@@ -52,6 +52,7 @@ internal static class DocumentMappers
         CurrentLocation = member.CurrentLocation?.ToDocument(),
         RecentHistory = member.RecentHistory.Select(p => p.ToDocument()).ToList(),
         LastUpdatedVersion = member.LastUpdatedVersion,
+        HistoryDurationMinutes = member.HistoryDurationMinutes,
     };
 
     public static Member ToDomain(this MemberDocument doc) => new()
@@ -65,6 +66,7 @@ internal static class DocumentMappers
         CurrentLocation = doc.CurrentLocation?.ToDomain(),
         RecentHistory = doc.RecentHistory.Select(p => p.ToDomain()).ToList(),
         LastUpdatedVersion = doc.LastUpdatedVersion,
+        HistoryDurationMinutes = doc.HistoryDurationMinutes,
     };
 
     public static MarkerDocument ToDocument(this Marker marker) => new()

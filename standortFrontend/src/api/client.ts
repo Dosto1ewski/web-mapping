@@ -4,6 +4,7 @@ import type {
   JoinGroupRequest,
   JoinGroupResponse,
   UpdateLocationRequest,
+  UpdateMemberSettingsRequest,
   GroupLocationsResponse,
   CreateMarkerRequest,
   MarkerDto,
@@ -63,6 +64,49 @@ export async function updateLocation(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(req),
+  });
+  if (res.status === 204) return;
+  let body: ApiError;
+  try {
+    body = await res.json();
+  } catch {
+    body = { error: 'unknown', message: `HTTP ${res.status}` };
+  }
+  throw new ApiException(res.status, body);
+}
+
+export async function updateMemberSettings(
+  groupId: string,
+  memberId: string,
+  token: string,
+  req: UpdateMemberSettingsRequest,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/settings`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(req),
+  });
+  if (res.status === 204) return;
+  let body: ApiError;
+  try {
+    body = await res.json();
+  } catch {
+    body = { error: 'unknown', message: `HTTP ${res.status}` };
+  }
+  throw new ApiException(res.status, body);
+}
+
+export async function deleteMemberHistory(
+  groupId: string,
+  memberId: string,
+  token: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/history`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 204) return;
   let body: ApiError;
