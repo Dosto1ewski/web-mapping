@@ -312,7 +312,9 @@ Example Body:
   "points_encoded": false
 }
 ```
-- [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Voraussetzung (eigener Live-Standort) ist implementiert.
+- [ ] **Navigation / routing to other users** — frontend shows route and ETA to group members. Cool wäre dann eine "Gruppenmemberliste zu haben, in der man auf Navigate to Member klicken kann, damit man nicht auf der Karte nach User suchen muss.
+  - [ ] **Group-Member-List** Which shows all Members of the group and when they last updatet their location.
+- [ ] **Marker List** Shows a list of all Markers, so you don't have to search for them on the map
 - [ ] **Invitelink statt URL + TOKEN** — 
 
 ### Design
