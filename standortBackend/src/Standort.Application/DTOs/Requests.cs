@@ -17,4 +17,5 @@ public sealed record CreateMarkerRequest(
     double Lat,
     double Lng,
     string? Color,
-    string? Notes);
+    string? Notes,
+    string? Icon);

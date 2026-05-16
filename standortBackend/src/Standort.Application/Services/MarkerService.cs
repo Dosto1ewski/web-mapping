@@ -46,6 +46,7 @@ public sealed class MarkerService
             Lng = request.Lng,
             Color = request.Color,
             Notes = request.Notes,
+            Icon = request.Icon,
             CreatedByMemberId = memberId,
             CreatedAt = _clock.UtcNow,
         };
@@ -93,6 +94,7 @@ public sealed class MarkerService
         Lng: marker.Lng,
         Color: marker.Color,
         Notes: marker.Notes,
+        Icon: marker.Icon,
         CreatedByMemberId: marker.CreatedByMemberId,
         CreatedAt: marker.CreatedAt);
 }

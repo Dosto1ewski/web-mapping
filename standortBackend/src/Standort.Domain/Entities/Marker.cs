@@ -9,6 +9,7 @@ public sealed record Marker
     public required double Lng { get; init; }
     public string? Color { get; init; }
     public string? Notes { get; init; }
+    public string? Icon { get; init; }
     public required string CreatedByMemberId { get; init; }
     public required DateTimeOffset CreatedAt { get; init; }
 }

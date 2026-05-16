@@ -25,6 +25,8 @@ public sealed class MarkerDocument
 
     public string? Notes { get; set; }
 
+    public string? Icon { get; set; }
+
     public string CreatedByMemberId { get; set; } = string.Empty;
 
     public DateTimeOffset CreatedAt { get; set; }

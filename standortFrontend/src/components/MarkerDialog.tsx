@@ -1,26 +1,25 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-
-export const MARKER_COLORS = [
-  { hex: '#9ca3af', label: 'Grau' },
-  { hex: '#3b82f6', label: 'Blau' },
-  { hex: '#ef4444', label: 'Rot' },
-  { hex: '#f97316', label: 'Orange' },
-  { hex: '#22c55e', label: 'Grün' },
-  { hex: '#a855f7', label: 'Lila' },
-  { hex: '#06b6d4', label: 'Cyan' },
-];
+import { MARKER_COLORS, MARKER_ICONS } from './markerConstants';
 
 interface Props {
-  lat: number;
-  lng: number;
-  onConfirm: (name: string, color: string, notes: string | null) => Promise<void>;
-  onCancel: () => void;
+  readonly lat: number;
+  readonly lng: number;
+  readonly onConfirm: (name: string, color: string | null, notes: string | null, icon?: typeof MARKER_ICONS[number]['id']) => Promise<void>;
+  readonly onCancel: () => void;
+}
+
+function iconGlyph(id: typeof MARKER_ICONS[number]['id']) {
+  if (id === 'tree') return '🌳';
+  if (id === 'book') return '📚';
+  if (id === 'champagne') return '🥂';
+  return '📍';
 }
 
 export default function MarkerDialog({ lat, lng, onConfirm, onCancel }: Props) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#3b82f6');
+  const [color, setColor] = useState<string | null>('#3b82f6');
+  const [icon, setIcon] = useState<typeof MARKER_ICONS[number]['id']>('default');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +33,8 @@ export default function MarkerDialog({ lat, lng, onConfirm, onCancel }: Props) {
     setLoading(true);
     setError('');
     try {
-      await onConfirm(name.trim(), color, notes.trim() || null);
+      const sendColor = icon === 'default' ? color : null;
+      await onConfirm(name.trim(), sendColor, notes.trim() || null, icon ?? 'default');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler beim Erstellen.');
       setLoading(false);
@@ -62,23 +62,57 @@ export default function MarkerDialog({ lat, lng, onConfirm, onCancel }: Props) {
               placeholder="z.B. Treffpunkt"
             />
           </label>
+
           <div className="color-picker">
-            <span>Farbe</span>
-            <div className="color-swatches">
-              {MARKER_COLORS.map((c) => (
-                <button
-                  key={c.hex}
-                  type="button"
-                  className={`color-swatch${color === c.hex ? ' selected' : ''}`}
-                  style={{ background: c.hex }}
-                  title={c.label}
-                  onClick={() => setColor(c.hex)}
-                />
-              ))}
-            </div>
+            <span>Icon</span>
+            <ul className="color-swatches" style={{display:'flex',gap:6,listStyle:'none',padding:0,margin:0}}>
+              {MARKER_ICONS.map((ic) => {
+                const glyph = iconGlyph(ic.id);
+                return (
+                  <li key={ic.id}>
+                    <button
+                      type="button"
+                      className={`color-swatch${icon === ic.id ? ' selected' : ''}`}
+                      title={ic.label}
+                      onClick={() => {
+                        setIcon(ic.id);
+                        if (ic.id === 'default') {
+                          if (color === null) setColor('#3b82f6');
+                        } else {
+                          setColor(null);
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      <span aria-hidden style={{fontSize:16,lineHeight:1}}>{glyph}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
+
+          {icon === 'default' && (
+            <div className="color-picker">
+              <span>Farbe</span>
+              <div className="color-swatches">
+                {MARKER_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    className={`color-swatch${color === c.hex ? ' selected' : ''}`}
+                    style={{ background: c.hex }}
+                    title={c.label}
+                    onClick={() => setColor(c.hex)}
+                    disabled={loading}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <label>
-            Notiz (optional)
+            <span>Notiz (optional)</span>
             <textarea
               value={notes}
               maxLength={500}

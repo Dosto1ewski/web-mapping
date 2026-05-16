@@ -39,5 +39,6 @@ public sealed record MarkerDto(
     double Lng,
     string? Color,
     string? Notes,
+    string? Icon,
     string CreatedByMemberId,
     DateTimeOffset CreatedAt);

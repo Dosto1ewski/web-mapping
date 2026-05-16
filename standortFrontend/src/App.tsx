@@ -102,7 +102,7 @@ export default function App() {
     setPendingCoords({ lat, lng });
   }
 
-  async function handleCreateMarker(name: string, color: string, notes: string | null) {
+  async function handleCreateMarker(name: string, color: string | null, notes: string | null, icon?: 'tree' | 'book' | 'champagne' | 'default' | null) {
     if (!session || !pendingCoords) return;
     await createMarker(session.groupId, session.memberId, session.memberToken, {
       name,
@@ -110,6 +110,7 @@ export default function App() {
       lng: pendingCoords.lng,
       color,
       notes,
+      icon: icon ?? null,
     });
     setPendingCoords(null);
     refreshMarkers();

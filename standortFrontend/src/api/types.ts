@@ -68,6 +68,7 @@ export interface CreateMarkerRequest {
   lng: number;
   color?: string | null;
   notes?: string | null;
+  icon?: 'tree' | 'book' | 'champagne' | 'default' | null;
 }
 
 export interface MarkerDto {
@@ -79,4 +80,5 @@ export interface MarkerDto {
   notes: string | null;
   createdByMemberId: string;
   createdAt: string;
+  icon?: 'tree' | 'book' | 'champagne' | 'default' | null;
 }

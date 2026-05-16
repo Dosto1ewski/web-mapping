@@ -80,6 +80,7 @@ internal static class DocumentMappers
         Lng = marker.Lng,
         Color = marker.Color,
         Notes = marker.Notes,
+        Icon = marker.Icon,
         CreatedByMemberId = marker.CreatedByMemberId,
         CreatedAt = marker.CreatedAt,
     };
@@ -93,6 +94,7 @@ internal static class DocumentMappers
         Lng = doc.Lng,
         Color = doc.Color,
         Notes = doc.Notes,
+        Icon = doc.Icon,
         CreatedByMemberId = doc.CreatedByMemberId,
         CreatedAt = doc.CreatedAt,
     };

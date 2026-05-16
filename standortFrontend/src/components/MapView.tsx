@@ -105,6 +105,72 @@ function createColoredIcon(color: string): L.DivIcon {
   });
 }
 
+function createMarkerIcon(marker: MarkerDto): L.DivIcon {
+  const raw = marker.icon ?? 'default';
+  const kind = String(raw).toLowerCase().trim();
+
+  const mapped = kind === 'sekt' || kind === 'bottle' ? 'champagne' : kind;
+
+  if (mapped === 'tree') {
+    const canopy = '#22c55e';
+    const trunk = '#8b5a2b';
+    return L.divIcon({
+      className: 'marker-tree-icon',
+      html: `<svg width="24" height="24" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
+        <path d="M12 2c-1.1 0-2 .9-2 2 0 .4.1.8.3 1.1L9 8h6l-1.3-2.9c.2-.3.3-.7.3-1.1 0-1.1-.9-2-2-2z" fill="${canopy}" stroke="white" stroke-width="0.6"/>
+        <rect x="10.5" y="9" width="3" height="6" rx="0.5" fill="${trunk}" />
+      </svg>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
+      popupAnchor: [0, -20],
+    });
+  }
+
+  if (mapped === 'book') {
+    const cover = '#3b82f6';
+    return L.divIcon({
+      className: 'marker-book-icon',
+      html: `<svg width="22" height="22" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
+        <path d="M4 6h12v12H4z" fill="${cover}" stroke="white" stroke-width="0.8"/>
+        <path d="M16 6h3v12" stroke="#fff" stroke-width="0.8"/>
+      </svg>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 22],
+      popupAnchor: [0, -20],
+    });
+  }
+
+  if (mapped === 'champagne') {
+    const bottle = '#f59e0b';
+    return L.divIcon({
+      className: 'marker-champagne-icon',
+      html: `<svg width="20" height="24" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
+        <path d="M10 2h4v3h-4z" fill="#ddd" stroke="#fff" stroke-width="0.8"/>
+        <path d="M9 5h6v12a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3V5z" fill="${bottle}" stroke="white" stroke-width="0.8"/>
+      </svg>`,
+      iconSize: [20, 24],
+      iconAnchor: [10, 24],
+      popupAnchor: [0, -20],
+    });
+  }
+
+  const color = marker.color ?? '#9ca3af';
+  if (mapped === 'default' || mapped === '') return createColoredIcon(color);
+
+  let glyph = '📍';
+  if (mapped === 'tree') glyph = '🌳';
+  else if (mapped === 'book') glyph = '📚';
+  else if (mapped === 'champagne') glyph = '🥂';
+
+  return L.divIcon({
+    className: 'marker-emoji-icon',
+    html: `<div style="font-size:18px;line-height:1;transform:translateY(-2px);">${glyph}</div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 18],
+    popupAnchor: [0, -20],
+  });
+}
+
 function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
   const map = useMap();
   useEffect(() => { mapRef.current = map; }, [map, mapRef]);
@@ -283,8 +349,10 @@ export default function MapView({
       })()}
 
       {markers.map((marker) => {
+         
+        console.debug('Marker loaded:', marker.markerId, 'icon=', marker.icon, 'color=', marker.color);
         const pos: [number, number] = [marker.lat, marker.lng];
-        const icon = createColoredIcon(marker.color ?? '#9ca3af');
+        const icon = createMarkerIcon(marker);
         const isActive = marker.markerId === activeRouteMarkerId;
         return (
           <Marker key={marker.markerId} position={pos} icon={icon}>
@@ -318,6 +386,11 @@ export default function MapView({
                 )}
               </div>
             </Popup>
+            {showNametags && (
+              <Tooltip permanent direction="top" offset={[0, -12]} className="member-nametag">
+                {marker.name}
+              </Tooltip>
+            )}
           </Marker>
         );
       })}
@@ -364,7 +437,7 @@ function profileLabel(p: RouteProfile): string {
   return 'Auto';
 }
 
-function ProfileIcon({ profile }: { profile: RouteProfile }) {
+function ProfileIcon({ profile }: { readonly profile: RouteProfile }) {
   if (profile === 'foot') {
     return (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
