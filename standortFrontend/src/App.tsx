@@ -14,8 +14,10 @@ import SettingsPanel from './components/SettingsPanel';
 import MarkerDialog from './components/MarkerDialog';
 import type { Session } from './state/session';
 
-function RouteProfileGlyph({ profile }: { profile: RouteProfile }) {
-  const label = profile === 'foot' ? '🚶' : profile === 'bike' ? '🚴' : '🚗';
+function RouteProfileGlyph({ profile }: Readonly<{ profile: RouteProfile }>) {
+  let label = '🚗';
+  if (profile === 'foot') label = '🚶';
+  else if (profile === 'bike') label = '🚴';
   return <span className="route-overlay-glyph" aria-hidden="true">{label}</span>;
 }
 
@@ -49,14 +51,18 @@ export default function App() {
     settings.markerFetchSec * 1000,
   );
 
-  const defaultInviteCode = new URL(window.location.href).searchParams.get('invite') ?? undefined;
+  const defaultInviteCode = new URL(globalThis.location.href).searchParams.get('invite') ?? undefined;
 
   useEffect(() => {
-    if (locError) setStatus(locError);
+    if (!locError) return;
+    const id = globalThis.setTimeout(() => setStatus(locError), 0);
+    return () => globalThis.clearTimeout(id);
   }, [locError]);
 
   useEffect(() => {
-    if (markerError) setStatus(markerError);
+    if (!markerError) return;
+    const id = globalThis.setTimeout(() => setStatus(markerError), 0);
+    return () => globalThis.clearTimeout(id);
   }, [markerError]);
 
   function handleJoined(s: Session, code?: string) {
@@ -118,7 +124,8 @@ export default function App() {
 
   useEffect(() => {
     if (activeRoute && !markers.some((m) => m.markerId === activeRoute.markerId)) {
-      setActiveRoute(null);
+      const id = globalThis.setTimeout(() => setActiveRoute(null), 0);
+      return () => globalThis.clearTimeout(id);
     }
   }, [markers, activeRoute]);
 
@@ -161,15 +168,13 @@ export default function App() {
     }
   }
 
+  const nonSessionContent = panelCollapsed ? null : <Lobby defaultInviteCode={defaultInviteCode} onJoined={handleJoined} />;
+
   return (
     <div className="app">
       <div className={`panel${panelCollapsed ? ' panel--collapsed' : ''}`}>
         <div className="panel-body">
-          {!session ? (
-            !panelCollapsed ? (
-              <Lobby defaultInviteCode={defaultInviteCode} onJoined={handleJoined} />
-            ) : null
-          ) : (
+          {session ? (
             <MemberControls
               session={session}
               inviteCode={inviteCode}
@@ -188,7 +193,7 @@ export default function App() {
               }
               collapsed={panelCollapsed}
             />
-          )}
+          ) : nonSessionContent}
           {!panelCollapsed && status && <p className="status">{status}</p>}
         </div>
         <button

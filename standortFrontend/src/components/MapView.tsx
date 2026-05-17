@@ -16,7 +16,8 @@ const USER_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1a
 function getUserColor(memberId: string): string {
   let hash = 0;
   for (let i = 0; i < memberId.length; i++) {
-    hash = (hash * 31 + memberId.charCodeAt(i)) & 0xffffffff;
+    const cp = memberId.codePointAt(i) ?? 0;
+    hash = (hash * 31 + cp) & 0xffffffff;
   }
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
 }
@@ -108,7 +109,9 @@ function createMarkerIcon(marker: MarkerDto): L.DivIcon {
   const leafletBaseImg = `<img src="${iconUrl}" srcset="${iconRetinaUrl} 2x" style="width:25px;height:41px;display:block;"/>`;
 
   if (mapped === 'tree' || mapped === 'book' || mapped === 'champagne') {
-    const overlayPath = mapped === 'tree' ? '/tree.png' : mapped === 'book' ? '/book.png' : '/champagne.png';
+    let overlayPath = '/champagne.png';
+    if (mapped === 'tree') overlayPath = '/tree.png';
+    else if (mapped === 'book') overlayPath = '/book.png';
     return L.divIcon({
       className: `marker-${mapped}-icon`,
       html: `<img src="${overlayPath}" alt="${mapped}" style="width:25px;height:41px;display:block;"/>`,

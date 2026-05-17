@@ -73,7 +73,7 @@ html,
   min-width: 18px;
   padding: 0 !important;
   background: #f8fafc !important;
-  color: #94a3b8 !important;
+  color: #475569 !important;
   border: none;
   border-left: 1px solid #e2e8f0;
   border-radius: 0 8px 8px 0;
@@ -92,10 +92,9 @@ html,
   border-radius: 8px !important;
   right: auto;
   left: 0;
-  transform: translateX(-50%);
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%, -50%);
 }
 
 .panel--collapsed .panel-collapse-toggle::before {
@@ -104,7 +103,7 @@ html,
 }
 
 .panel-collapse-toggle:hover::before {
-  color: #64748b !important;
+  color: #1e293b !important;
   transform: translateX(1px);
 }
 
@@ -148,13 +147,13 @@ html,
 }
 
 .icon-action-btn.placing-active {
-  background: #d97706 !important;
-  color: white !important;
+  background: #b45309 !important;
+  color: #ffffff !important;
 }
 
 .icon-action-btn.leave-icon-btn {
   background: #fee2e2 !important;
-  color: #dc2626 !important;
+  color: #991b1b !important;
   margin-top: 2px;
 }
 
@@ -176,7 +175,7 @@ html,
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #666;
+  color: #374151;
 }
 
 .lobby-section input,
@@ -208,7 +207,7 @@ html,
 }
 
 .lobby-section button:disabled {
-  background: #93c5fd;
+  background: #60a5fa;
   cursor: not-allowed;
 }
 
@@ -228,7 +227,7 @@ html,
   display: grid;
   gap: 6px;
   font-size: 13px;
-  color: #555;
+  color: #374151;
 }
 
 .invite-actions {
@@ -320,13 +319,11 @@ html,
 .status {
   margin-top: 8px;
   font-size: 12px;
-  color: #555;
+  color: #374151;
   border-top: 1px solid #eee;
   padding-top: 8px;
   word-break: break-word;
 }
-
-/* ── Settings panel (top-right) ─────────────────────────────── */
 
 .settings-panel {
   position: absolute;
@@ -463,7 +460,7 @@ html,
 .marker-coords {
   margin: 0;
   font-size: 11px;
-  color: #94a3b8;
+  color: #475569;
   font-family: monospace;
 }
 
@@ -535,7 +532,7 @@ html,
 .dialog-error {
   margin: 0;
   font-size: 12px;
-  color: #dc2626;
+  color: #991b1b;
 }
 
 .dialog-actions {
@@ -571,7 +568,7 @@ html,
 .marker-popup-notes {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: #475569;
   max-width: 180px;
   word-break: break-word;
 }
@@ -623,9 +620,9 @@ html,
 }
 
 .route-profile-btn.selected {
-  background: #1d7af3 !important;
-  color: white !important;
-  border-color: #1d7af3;
+  background: #1557b0 !important;
+  color: #ffffff !important;
+  border-color: #1557b0;
 }
 
 /* ── Route overlay (top center) ─────────────────────────────── */
@@ -712,7 +709,7 @@ html,
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: #475569;
   border-top: 1px solid #e2e8f0;
   padding-top: 8px;
 }

@@ -42,7 +42,7 @@ export default function MemberControls({
   onOwnLocation,
   onHistoryDurationChange,
   collapsed = false,
-}: Props) {
+}: Readonly<Props>) {
   const [historyInput, setHistoryInput] = useState(String(session.historyDurationMinutes));
 
   const sendLocation = useCallback(
@@ -109,7 +109,7 @@ export default function MemberControls({
   }
 
   const inviteLink = inviteCode
-    ? `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(inviteCode)}`
+    ? `${globalThis.location.origin}${globalThis.location.pathname}?invite=${encodeURIComponent(inviteCode)}`
     : '';
 
   async function handleCopyInviteLink() {
@@ -190,16 +190,18 @@ export default function MemberControls({
         <button onClick={getCurrent}>Standort teilen</button>
         <label className="auto-share-label">
           <input
+            id="autoShare"
             type="checkbox"
             checked={autoShare}
             onChange={(e) => setAutoShare(e.target.checked)}
           />
-          Auto
+          <span>Auto</span>
         </label>
       </div>
       <label className="control-row history-duration-row">
-        Verlaufsdauer (Min.)
+        <span>Verlaufsdauer (Min.)</span>
         <input
+          id="historyDuration"
           type="number"
           min={0}
           max={MAX_HISTORY_DURATION_MIN}

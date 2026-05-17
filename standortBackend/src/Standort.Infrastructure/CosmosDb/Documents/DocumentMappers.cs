@@ -1,3 +1,4 @@
+using System.Linq;
 using Standort.Domain.Entities;
 using Standort.Domain.ValueObjects;
 
@@ -14,13 +15,6 @@ internal static class DocumentMappers
         ServerReceivedAt = value.ServerReceivedAt,
     };
 
-    public static GeoCoordinate ToDomain(this GeoPointDocument doc) => new(
-        Lat: doc.Lat,
-        Lng: doc.Lng,
-        AccuracyMeters: doc.AccuracyMeters,
-        RecordedAt: doc.RecordedAt,
-        ServerReceivedAt: doc.ServerReceivedAt);
-
     public static GroupDocument ToDocument(this Group group) => new()
     {
         Id = GroupDocument.GroupDocId,
@@ -29,14 +23,6 @@ internal static class DocumentMappers
         Name = group.Name,
         CreatedAt = group.CreatedAt,
         Version = group.Version,
-    };
-
-    public static Group ToDomain(this GroupDocument doc) => new()
-    {
-        GroupId = doc.GroupId,
-        Name = doc.Name,
-        CreatedAt = doc.CreatedAt,
-        Version = doc.Version,
     };
 
     public static MemberDocument ToDocument(this Member member) => new()
@@ -55,20 +41,6 @@ internal static class DocumentMappers
         HistoryDurationMinutes = member.HistoryDurationMinutes,
     };
 
-    public static Member ToDomain(this MemberDocument doc) => new()
-    {
-        MemberId = doc.MemberId,
-        GroupId = doc.GroupId,
-        DisplayName = doc.DisplayName,
-        DisplayNameNormalized = doc.DisplayNameNormalized,
-        TokenHash = doc.TokenHash,
-        TokenIssuedAt = doc.TokenIssuedAt,
-        CurrentLocation = doc.CurrentLocation?.ToDomain(),
-        RecentHistory = doc.RecentHistory.Select(p => p.ToDomain()).ToList(),
-        LastUpdatedVersion = doc.LastUpdatedVersion,
-        HistoryDurationMinutes = doc.HistoryDurationMinutes,
-    };
-
     public static MarkerDocument ToDocument(this Marker marker) => new()
     {
         Id = MarkerDocument.IdFor(marker.MarkerId),
@@ -83,6 +55,36 @@ internal static class DocumentMappers
         Icon = marker.Icon,
         CreatedByMemberId = marker.CreatedByMemberId,
         CreatedAt = marker.CreatedAt,
+    };
+
+    // All ToDomain methods grouped together
+    public static GeoCoordinate ToDomain(this GeoPointDocument doc) => new(
+        Lat: doc.Lat,
+        Lng: doc.Lng,
+        AccuracyMeters: doc.AccuracyMeters,
+        RecordedAt: doc.RecordedAt,
+        ServerReceivedAt: doc.ServerReceivedAt);
+
+    public static Group ToDomain(this GroupDocument doc) => new()
+    {
+        GroupId = doc.GroupId,
+        Name = doc.Name,
+        CreatedAt = doc.CreatedAt,
+        Version = doc.Version,
+    };
+
+    public static Member ToDomain(this MemberDocument doc) => new()
+    {
+        MemberId = doc.MemberId,
+        GroupId = doc.GroupId,
+        DisplayName = doc.DisplayName,
+        DisplayNameNormalized = doc.DisplayNameNormalized,
+        TokenHash = doc.TokenHash,
+        TokenIssuedAt = doc.TokenIssuedAt,
+        CurrentLocation = doc.CurrentLocation?.ToDomain(),
+        RecentHistory = doc.RecentHistory.Select(p => p.ToDomain()).ToList(),
+        LastUpdatedVersion = doc.LastUpdatedVersion,
+        HistoryDurationMinutes = doc.HistoryDurationMinutes,
     };
 
     public static Marker ToDomain(this MarkerDocument doc) => new()
