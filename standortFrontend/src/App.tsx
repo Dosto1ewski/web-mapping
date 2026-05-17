@@ -205,6 +205,17 @@ export default function App() {
         </button>
       </div>
 
+      {panelCollapsed && (
+        <button
+          className="panel-open-button"
+          onClick={() => setPanelCollapsed(false)}
+          title="Panel öffnen"
+          aria-label="Panel öffnen"
+        >
+          ◀
+        </button>
+      )}
+
       <SettingsPanel settings={settings} onUpdate={updateSettings} />
 
       <MapView

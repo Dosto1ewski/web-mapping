@@ -111,9 +111,7 @@ function createMarkerIcon(marker: MarkerDto): L.DivIcon {
     const overlayPath = mapped === 'tree' ? '/tree.png' : mapped === 'book' ? '/book.png' : '/champagne.png';
     return L.divIcon({
       className: `marker-${mapped}-icon`,
-      html: `<div style="position:relative;width:25px;height:41px;">${leafletBaseImg}
-        <img src="${overlayPath}" alt="${mapped}" style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:14px;height:auto;pointer-events:none;"/>
-      </div>`,
+      html: `<img src="${overlayPath}" alt="${mapped}" style="width:25px;height:41px;display:block;"/>`,
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [0, -34],

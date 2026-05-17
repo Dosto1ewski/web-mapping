@@ -48,8 +48,10 @@ html,
 }
 
 .panel--collapsed {
-  min-width: auto;
-  max-width: none;
+  min-width: 48px;
+  max-width: 48px;
+  left: 12px;
+  overflow: visible;
 }
 
 .panel-body {
@@ -59,6 +61,7 @@ html,
 }
 
 .panel--collapsed .panel-body {
+  display: none;
   padding: 8px 6px;
 }
 
@@ -78,12 +81,32 @@ html,
   flex-shrink: 0;
 }
 
-.panel-collapse-toggle:hover {
-  background: #f1f5f9 !important;
-  color: #64748b !important;
+.panel-collapse-toggle::before {
+  font-size: 14px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.15s ease, color 0.15s ease;
 }
 
-/* ── Member controls icon strip (collapsed) ─────────────────── */
+.panel--collapsed .panel-collapse-toggle {
+  border-radius: 8px !important;
+  right: auto;
+  left: 0;
+  transform: translateX(-50%);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.panel--collapsed .panel-collapse-toggle::before {
+  content: '›';
+  transform: none;
+}
+
+.panel-collapse-toggle:hover::before {
+  color: #64748b !important;
+  transform: translateX(1px);
+}
 
 .member-controls-icons {
   display: flex;
@@ -735,4 +758,29 @@ html,
 
 .settings-hint-link:hover {
   text-decoration: underline;
+}
+
+.panel-open-button {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  z-index: 1100;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: white;
+  color: #475569;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.panel-open-button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
 }
