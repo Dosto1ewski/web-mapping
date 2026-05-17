@@ -10,7 +10,7 @@ export const MARKER_COLORS = [
 
 export const MARKER_ICONS = [
   { id: 'default', label: 'Standard' },
-  { id: 'tree', label: 'Baum' },
-  { id: 'book', label: 'Buch' },
-  { id: 'champagne', label: 'Sekt' },
+  { id: 'tree', label: 'Baum', src: '/tree.png' },
+  { id: 'book', label: 'Buch', src: '/book.png' },
+  { id: 'champagne', label: 'Sekt', src: '/champagne.png' },
 ] as const;

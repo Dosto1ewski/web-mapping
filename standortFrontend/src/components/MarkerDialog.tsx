@@ -10,9 +10,9 @@ interface Props {
 }
 
 function iconGlyph(id: typeof MARKER_ICONS[number]['id']) {
-  if (id === 'tree') return '🌳';
-  if (id === 'book') return '📚';
-  if (id === 'champagne') return '🥂';
+  if (id === 'tree') return '<img src="/tree.png" alt="Baum" style="width:18px;height:18px;vertical-align:middle;"/>';
+  if (id === 'book') return '<img src="/book.png" alt="Buch" style="width:18px;height:18px;vertical-align:middle;"/>';
+  if (id === 'champagne') return '<img src="/champagne.png" alt="Sekt" style="width:18px;height:18px;vertical-align:middle;"/>';
   return '📍';
 }
 
@@ -84,7 +84,7 @@ export default function MarkerDialog({ lat, lng, onConfirm, onCancel }: Props) {
                       }}
                       disabled={loading}
                     >
-                      <span aria-hidden style={{fontSize:16,lineHeight:1}}>{glyph}</span>
+                      <span aria-hidden style={{fontSize:16,lineHeight:1}} dangerouslySetInnerHTML={{ __html: glyph }} />
                     </button>
                   </li>
                 );

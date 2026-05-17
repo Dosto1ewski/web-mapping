@@ -88,92 +88,79 @@ function createArrowIcon(color: string, angleDeg: number): L.DivIcon {
   });
 }
 
-function createColoredIcon(color: string): L.DivIcon {
-  return L.divIcon({
-    className: '',
-    html: `<div style="
-      width:18px;height:18px;
-      border-radius:50% 50% 50% 0;
-      background:${color};
-      border:2px solid white;
-      box-shadow:0 1px 4px rgba(0,0,0,0.45);
-      transform:rotate(-45deg)
-    "></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 18],
-    popupAnchor: [0, -20],
-  });
-}
-
 function createMarkerIcon(marker: MarkerDto): L.DivIcon {
   const raw = marker.icon ?? 'default';
   const kind = String(raw).toLowerCase().trim();
 
-  const mapped = kind === 'sekt' || kind === 'bottle' ? 'champagne' : kind;
+  let mapped = kind;
+  if (['tree'].includes(kind)) mapped = 'tree';
+  else if (['book', 'bildung', 'library'].includes(kind)) mapped = 'book';
+  else if (['sekt', 'bottle', 'champagne', 'bar'].includes(kind)) mapped = 'champagne';
 
-  if (mapped === 'tree') {
-    const canopy = '#22c55e';
-    const trunk = '#8b5a2b';
+  const baseColor = marker.color ?? null;
+  const markerBaseSvg = (size = 25, fill = baseColor ?? '#2a81d6') => `
+    <svg viewBox="0 0 25 41" width="${size}" height="${Math.round(size * 1.64)}" style="display:block;">
+      <path d="M12.5 0C7 0 3 4 3 9c0 6 9.5 18 9.5 18s9.5-12 9.5-18c0-5-4-9-9.5-9z" fill="${fill}" stroke="#fff" stroke-width="1.2"/>
+      <circle cx="12.5" cy="11" r="3.2" fill="#fff" opacity="0.12"/>
+    </svg>
+  `;
+
+  const leafletBaseImg = `<img src="${iconUrl}" srcset="${iconRetinaUrl} 2x" style="width:25px;height:41px;display:block;"/>`;
+
+  if (mapped === 'tree' || mapped === 'book' || mapped === 'champagne') {
+    const overlayPath = mapped === 'tree' ? '/tree.png' : mapped === 'book' ? '/book.png' : '/champagne.png';
     return L.divIcon({
-      className: 'marker-tree-icon',
-      html: `<svg width="24" height="24" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
-        <path d="M12 2c-1.1 0-2 .9-2 2 0 .4.1.8.3 1.1L9 8h6l-1.3-2.9c.2-.3.3-.7.3-1.1 0-1.1-.9-2-2-2z" fill="${canopy}" stroke="white" stroke-width="0.6"/>
-        <rect x="10.5" y="9" width="3" height="6" rx="0.5" fill="${trunk}" />
-      </svg>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 24],
-      popupAnchor: [0, -20],
+      className: `marker-${mapped}-icon`,
+      html: `<div style="position:relative;width:25px;height:41px;">${leafletBaseImg}
+        <img src="${overlayPath}" alt="${mapped}" style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:14px;height:auto;pointer-events:none;"/>
+      </div>`,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [0, -34],
     });
   }
 
-  if (mapped === 'book') {
-    const cover = '#3b82f6';
+  if (mapped === 'default' || mapped === '') {
+    if (baseColor) {
+      return L.divIcon({
+        className: 'marker-default-icon',
+        html: `<div style="width:25px;height:41px;">${markerBaseSvg(25, baseColor)}</div>`,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [0, -34],
+      });
+    }
     return L.divIcon({
-      className: 'marker-book-icon',
-      html: `<svg width="22" height="22" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
-        <path d="M4 6h12v12H4z" fill="${cover}" stroke="white" stroke-width="0.8"/>
-        <path d="M16 6h3v12" stroke="#fff" stroke-width="0.8"/>
-      </svg>`,
-      iconSize: [22, 22],
-      iconAnchor: [11, 22],
-      popupAnchor: [0, -20],
+      className: 'marker-default-icon',
+      html: leafletBaseImg,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [0, -34],
     });
   }
 
-  if (mapped === 'champagne') {
-    const bottle = '#f59e0b';
+  if (baseColor) {
     return L.divIcon({
-      className: 'marker-champagne-icon',
-      html: `<svg width="20" height="24" viewBox="0 0 24 24" style="display:block;overflow:visible;background:none;border:none;">
-        <path d="M10 2h4v3h-4z" fill="#ddd" stroke="#fff" stroke-width="0.8"/>
-        <path d="M9 5h6v12a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3V5z" fill="${bottle}" stroke="white" stroke-width="0.8"/>
-      </svg>`,
-      iconSize: [20, 24],
-      iconAnchor: [10, 24],
-      popupAnchor: [0, -20],
+      className: 'marker-default-icon',
+      html: `<div style="width:25px;height:41px;">${markerBaseSvg(25, baseColor)}</div>`,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [0, -34],
     });
   }
-
-  const color = marker.color ?? '#9ca3af';
-  if (mapped === 'default' || mapped === '') return createColoredIcon(color);
-
-  let glyph = '📍';
-  if (mapped === 'tree') glyph = '🌳';
-  else if (mapped === 'book') glyph = '📚';
-  else if (mapped === 'champagne') glyph = '🥂';
 
   return L.divIcon({
-    className: 'marker-emoji-icon',
-    html: `<div style="font-size:18px;line-height:1;transform:translateY(-2px);">${glyph}</div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 18],
-    popupAnchor: [0, -20],
+    className: 'marker-default-icon',
+    html: leafletBaseImg,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [0, -34],
   });
 }
 
-function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+function MapRefCapture({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
   const map = useMap();
-  useEffect(() => { mapRef.current = map; }, [map, mapRef]);
+  useEffect(() => { onMapReady(map); }, [map, onMapReady]);
   return null;
 }
 
@@ -215,21 +202,21 @@ function MapClickHandler({
 }
 
 interface Props {
-  members: MemberLocationDto[];
-  markers: MarkerDto[];
-  session: Session | null;
-  placingMarker: boolean;
-  onMapClick: (lat: number, lng: number) => void;
-  onDeleteMarker: (markerId: string) => void;
-  placingLocation: boolean;
-  locationDragPos: { lat: number; lng: number };
-  onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
-  showNametags: boolean;
-  ownLocation: { lat: number; lng: number } | null;
-  activeRouteMarkerId: string | null;
-  activeRouteProfile: RouteProfile | null;
-  routeGeometry: [number, number][] | null;
-  onRouteRequest: (markerId: string, profile: RouteProfile) => void;
+  readonly members: MemberLocationDto[];
+  readonly markers: MarkerDto[];
+  readonly session: Session | null;
+  readonly placingMarker: boolean;
+  readonly onMapClick: (lat: number, lng: number) => void;
+  readonly onDeleteMarker: (markerId: string) => void;
+  readonly placingLocation: boolean;
+  readonly locationDragPos: { lat: number; lng: number };
+  readonly onLocationDragEnd: (pos: { lat: number; lng: number }) => void;
+  readonly showNametags: boolean;
+  readonly ownLocation: { lat: number; lng: number } | null;
+  readonly activeRouteMarkerId: string | null;
+  readonly activeRouteProfile: RouteProfile | null;
+  readonly routeGeometry: [number, number][] | null;
+  readonly onRouteRequest: (markerId: string, profile: RouteProfile) => void;
 }
 
 function createOwnIcon(color: string): L.DivIcon {
@@ -290,7 +277,7 @@ export default function MapView({
         maxZoom={19}
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
       />
-      <MapRefCapture mapRef={mapRef} />
+      <MapRefCapture onMapReady={(m) => { mapRef.current = m; }} />
       <FitBounds members={members} />
       <MapClickHandler placingMarker={placingMarker} onMapClick={onMapClick} />
 
