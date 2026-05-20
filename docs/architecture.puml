@@ -1,0 +1,180 @@
+@startuml Standort – E2E-Verschlüsselung & Kommunikation
+
+!theme plain
+skinparam defaultFontName Helvetica
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceGroupBorderColor #888888
+skinparam sequenceGroupFontColor #555555
+skinparam noteBorderColor #AAAAAA
+skinparam noteBackgroundColor #FAFAFA
+
+actor "Nutzer A\n(Ersteller)" as CreatorUser
+actor "Nutzer B\n(Beitretender)" as JoinerUser
+
+box "Browser – React SPA" #E8F4FD
+  participant "Lobby.tsx" as Lobby
+  participant "groupCrypto.ts\n(Web Crypto API)" as Crypto
+  participant "client.ts\n/ hooks" as Client
+end box
+
+box "Azure Functions (.NET 9)" #F0F8E8
+  participant "GroupFunction\n/ LocationFunction\n/ MarkerFunction" as Functions
+end box
+
+database "Azure Cosmos DB" as CosmosDB
+
+== Gruppe erstellen ==
+
+CreatorUser -> Lobby : Gruppenname + eigener Name
+activate Lobby
+
+Lobby -> Crypto : generateInviteCode()
+note right of Crypto
+  10 Zufallsbytes
+  → Crockford Base32
+  → "XXXXXXXX-XXXXXXXX"
+  (80 Bit Entropie)
+end note
+Crypto --> Lobby : inviteCode
+
+Lobby -> Crypto : hashInviteCode(inviteCode)
+note right of Crypto
+  SHA-256(UTF-8(inviteCode))
+  → 64-stelliger Hex-String
+end note
+Crypto --> Lobby : inviteCodeHash
+
+Lobby -> Functions : POST /api/groups\n{ name, createdByDisplayName,\n  inviteCodeHash }
+note right of Lobby
+  ⚠ Klartext-Code
+  verlässt den Browser nie!
+end note
+activate Functions
+
+Functions -> CosmosDB : Gruppe + Mitglied anlegen\nInviteCodeDocument { id: hash }
+note right of Functions
+  Nur Hash wird gespeichert.
+  Kein Klartext-Code im Backend.
+end note
+CosmosDB --> Functions : OK
+
+Functions --> Lobby : { groupId, memberId, memberToken }
+deactivate Functions
+
+Lobby -> Crypto : deriveGroupKey(inviteCode, groupId)
+note right of Crypto
+  HKDF-SHA-256
+  ikm  = UTF-8(inviteCode)
+  salt = UTF-8(groupId)
+  info = "standort-v1-location"
+  → AES-256-GCM CryptoKey
+end note
+Crypto --> Lobby : cryptoKey
+
+Lobby --> CreatorUser : Einladungscode anzeigen\n(zum Weitergeben)
+deactivate Lobby
+
+== Gruppe beitreten ==
+
+CreatorUser -> JoinerUser : Einladungscode teilen\n(z. B. per Nachricht)
+
+JoinerUser -> Lobby : gibt Code ein + eigener Name
+activate Lobby
+
+Lobby -> Functions : POST /api/groups/join\n{ inviteCode (Klartext), displayName }
+activate Functions
+
+Functions -> Functions : SHA-256(inviteCode)
+note right of Functions
+  Backend hasht den Code
+  und sucht in der DB nach
+  dem passenden Dokument.
+end note
+Functions -> CosmosDB : Lookup by inviteCodeHash
+CosmosDB --> Functions : groupId
+
+Functions -> CosmosDB : Mitglied anlegen
+CosmosDB --> Functions : OK
+
+Functions --> Lobby : { groupId, memberId, memberToken }
+deactivate Functions
+
+Lobby -> Crypto : deriveGroupKey(inviteCode, groupId)
+note right of Crypto
+  Gleicher Ablauf wie beim Ersteller.
+  Gleicher Code + gleiche groupId
+  → identischer AES-Schlüssel.
+end note
+Crypto --> Lobby : cryptoKey
+
+deactivate Lobby
+
+== Standort teilen (verschlüsselt) ==
+
+CreatorUser -> Client : Position senden
+activate Client
+
+Client -> Crypto : encrypt(key, JSON{lat,lng,accuracy})
+note right of Crypto
+  Zufälliges 12-Byte IV
+  AES-256-GCM encrypt
+  → "e1.<iv>.<ciphertext+tag>"
+end note
+Crypto --> Client : encryptedLocation
+
+Client -> Functions : PUT /api/groups/{id}/members/{id}/location\nBearer <memberToken>\n{ encryptedLocation, recordedAt }
+note right of Client
+  Backend sieht nur
+  opaken Ciphertext-Blob.
+end note
+activate Functions
+Functions -> CosmosDB : GeoPointDocument { encryptedLocation }
+CosmosDB --> Functions : OK
+Functions --> Client : 204 No Content
+deactivate Functions
+deactivate Client
+
+== Standorte empfangen & entschlüsseln ==
+
+Client -> Functions : GET /api/groups/{id}/locations
+activate Functions
+Functions -> CosmosDB : Mitglieder-Dokumente lesen
+CosmosDB --> Functions : [{ encryptedLocation, ... }]
+Functions --> Client : WireGroupLocationsResponse\n(verschlüsselte Blobs)
+deactivate Functions
+
+activate Client
+Client -> Crypto : decrypt(key, encryptedLocation) × N
+note right of Crypto
+  IV aus Blob extrahieren
+  AES-256-GCM decrypt + Tag-Prüfung
+  → { lat, lng, accuracyMeters }
+end note
+Crypto --> Client : decodierte Koordinaten
+Client --> CreatorUser : Karte aktualisieren
+deactivate Client
+
+== Marker erstellen (verschlüsselt) ==
+
+CreatorUser -> Client : Marker setzen\n(Name, Koordinaten, Notizen)
+activate Client
+
+Client -> Crypto : encrypt(key, JSON{lat,lng})
+Client -> Crypto : encrypt(key, notes)   [falls vorhanden]
+Crypto --> Client : encryptedLocation,\nencryptedNotes
+
+Client -> Functions : POST /api/groups/{id}/members/{id}/markers\nBearer <memberToken>\n{ name, encryptedLocation,\n  encryptedNotes, color, icon }
+note right of Client
+  Name bleibt Klartext
+  (einfacheres Debugging).
+  Koordinaten + Notizen
+  verschlüsselt.
+end note
+activate Functions
+Functions -> CosmosDB : MarkerDocument { encryptedLocation,\n  encryptedNotes }
+CosmosDB --> Functions : OK
+Functions --> Client : WireMarkerDto
+deactivate Functions
+deactivate Client
+
+@enduml
