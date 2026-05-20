@@ -58,7 +58,7 @@ public class LocationServiceTests
 
         var svc = BuildService();
         var act = () => svc.UpdateLocationAsync("g1", "m1", "bad",
-            new UpdateLocationRequest(49.0, 8.4, 10, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.enc", _clock.UtcNow), CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidTokenException>();
     }
@@ -70,7 +70,7 @@ public class LocationServiceTests
 
         var svc = BuildService();
         var act = () => svc.UpdateLocationAsync("g1", "m1", "any",
-            new UpdateLocationRequest(0, 0, 0, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.enc", _clock.UtcNow), CancellationToken.None);
 
         await act.Should().ThrowAsync<MemberNotFoundException>();
     }
@@ -78,7 +78,7 @@ public class LocationServiceTests
     [Fact]
     public async Task UpdateLocation_PreviousCurrent_BecomesNewestHistoryEntry()
     {
-        var prevCurrent = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
+        var prevCurrent = new GeoCoordinate("e1.iv.prev", _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
         var existing = BuildMember(current: prevCurrent, history: Array.Empty<GeoCoordinate>());
 
         _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
@@ -97,9 +97,9 @@ public class LocationServiceTests
 
         var svc = BuildService();
         await svc.UpdateLocationAsync("g1", "m1", "ok",
-            new UpdateLocationRequest(49.1, 8.5, 12, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.new", _clock.UtcNow), CancellationToken.None);
 
-        captured!.CurrentLocation!.Lat.Should().Be(49.1);
+        captured!.CurrentLocation!.EncryptedLocation.Should().Be("e1.iv.new");
         captured.RecentHistory.Should().HaveCount(1);
         captured.RecentHistory[0].Should().Be(prevCurrent);
     }
@@ -107,10 +107,9 @@ public class LocationServiceTests
     [Fact]
     public async Task UpdateLocation_DropsHistoryEntriesOlderThanDurationWindow()
     {
-        // Member keeps a 15-minute window.
-        var stale = new GeoCoordinate(40, 8, 10, _clock.UtcNow.AddMinutes(-30), _clock.UtcNow.AddMinutes(-30));
-        var fresh = new GeoCoordinate(41, 8, 10, _clock.UtcNow.AddMinutes(-5), _clock.UtcNow.AddMinutes(-5));
-        var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
+        var stale = new GeoCoordinate("e1.iv.stale", _clock.UtcNow.AddMinutes(-30), _clock.UtcNow.AddMinutes(-30));
+        var fresh = new GeoCoordinate("e1.iv.fresh", _clock.UtcNow.AddMinutes(-5), _clock.UtcNow.AddMinutes(-5));
+        var prev = new GeoCoordinate("e1.iv.prev", _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
 
         var existing = BuildMember(current: prev, history: new[] { stale, fresh }, historyDurationMinutes: 15);
         _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
@@ -121,7 +120,7 @@ public class LocationServiceTests
 
         var svc = BuildService();
         await svc.UpdateLocationAsync("g1", "m1", "ok",
-            new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.new2", _clock.UtcNow), CancellationToken.None);
 
         captured!.RecentHistory.Should().Equal(fresh, prev); // stale dropped, oldest-first preserved
     }
@@ -129,7 +128,7 @@ public class LocationServiceTests
     [Fact]
     public async Task UpdateLocation_WithZeroDuration_ClearsHistory()
     {
-        var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow.AddSeconds(-30), _clock.UtcNow.AddSeconds(-30));
+        var prev = new GeoCoordinate("e1.iv.prev", _clock.UtcNow.AddSeconds(-30), _clock.UtcNow.AddSeconds(-30));
         var existing = BuildMember(current: prev, history: Array.Empty<GeoCoordinate>(), historyDurationMinutes: 0);
         _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
         _tokenHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
@@ -139,19 +138,18 @@ public class LocationServiceTests
 
         var svc = BuildService();
         await svc.UpdateLocationAsync("g1", "m1", "ok",
-            new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.zero", _clock.UtcNow), CancellationToken.None);
 
         captured!.RecentHistory.Should().BeEmpty();
-        captured.CurrentLocation!.Lat.Should().Be(50);
+        captured.CurrentLocation!.EncryptedLocation.Should().Be("e1.iv.zero");
     }
 
     [Fact]
     public async Task UpdateLocation_HistoryClampedToHardCap()
     {
-        var prev = new GeoCoordinate(49.0, 8.4, 10, _clock.UtcNow, _clock.UtcNow);
-        // All within the 2880-minute window, but more than the hard cap.
+        var prev = new GeoCoordinate("e1.iv.prev", _clock.UtcNow, _clock.UtcNow);
         var bigHistory = Enumerable.Range(0, LocationService.HistoryHardCap + 50)
-            .Select(i => new GeoCoordinate(40, 8, 10, _clock.UtcNow.AddSeconds(-i), _clock.UtcNow.AddSeconds(-i)))
+            .Select(i => new GeoCoordinate($"e1.iv.{i}", _clock.UtcNow.AddSeconds(-i), _clock.UtcNow.AddSeconds(-i)))
             .Reverse()
             .ToList();
 
@@ -164,7 +162,7 @@ public class LocationServiceTests
 
         var svc = BuildService();
         await svc.UpdateLocationAsync("g1", "m1", "ok",
-            new UpdateLocationRequest(50, 9, 12, _clock.UtcNow), CancellationToken.None);
+            new UpdateLocationRequest("e1.iv.cap", _clock.UtcNow), CancellationToken.None);
 
         captured!.RecentHistory.Should().HaveCount(LocationService.HistoryHardCap);
         captured.RecentHistory.Last().Should().Be(prev); // newest kept
@@ -203,8 +201,8 @@ public class LocationServiceTests
     [Fact]
     public async Task DeleteHistory_ClearsHistoryAndCurrentLocation()
     {
-        var current = new GeoCoordinate(49, 8, 10, _clock.UtcNow, _clock.UtcNow);
-        var history = new[] { new GeoCoordinate(48, 8, 10, _clock.UtcNow.AddMinutes(-2), _clock.UtcNow.AddMinutes(-2)) };
+        var current = new GeoCoordinate("e1.iv.cur", _clock.UtcNow, _clock.UtcNow);
+        var history = new[] { new GeoCoordinate("e1.iv.hist", _clock.UtcNow.AddMinutes(-2), _clock.UtcNow.AddMinutes(-2)) };
         var existing = BuildMember(current: current, history: history);
         _groupRepo.ReadMemberAsync("g1", "m1", Arg.Any<CancellationToken>()).Returns(existing);
         _tokenHasher.Verify("ok", "hash").Returns(true);
@@ -260,7 +258,7 @@ public class LocationServiceTests
         _groupRepo.ReadGroupAsync("g1", Arg.Any<CancellationToken>())
             .Returns(new Group { GroupId = "g1", Name = "n", CreatedAt = _clock.UtcNow, Version = 8 });
 
-        var member = BuildMember(current: new GeoCoordinate(49, 8, 10, _clock.UtcNow, _clock.UtcNow));
+        var member = BuildMember(current: new GeoCoordinate("e1.iv.cur", _clock.UtcNow, _clock.UtcNow));
         _groupRepo.QueryMembersSinceAsync("g1", 5, Arg.Any<CancellationToken>())
             .Returns(ToAsync(new[] { member }));
 
@@ -271,6 +269,7 @@ public class LocationServiceTests
         result!.Version.Should().Be(8);
         result.Members.Should().HaveCount(1);
         result.Members[0].DisplayName.Should().Be("Antonin");
+        result.Members[0].CurrentLocation!.EncryptedLocation.Should().Be("e1.iv.cur");
     }
 
     private static async IAsyncEnumerable<T> ToAsync<T>(IEnumerable<T> items)

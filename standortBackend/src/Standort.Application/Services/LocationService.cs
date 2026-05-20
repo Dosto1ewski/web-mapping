@@ -46,9 +46,7 @@ public sealed class LocationService
 
         var now = _clock.UtcNow;
         var newPoint = new GeoCoordinate(
-            Lat: request.Lat,
-            Lng: request.Lng,
-            AccuracyMeters: request.AccuracyMeters,
+            EncryptedLocation: request.EncryptedLocation,
             RecordedAt: request.RecordedAt,
             ServerReceivedAt: now);
 
@@ -212,11 +210,9 @@ public sealed class LocationService
         CurrentLocation: member.CurrentLocation is null
             ? null
             : new GeoPointDto(
-                member.CurrentLocation.Lat,
-                member.CurrentLocation.Lng,
-                member.CurrentLocation.AccuracyMeters,
+                member.CurrentLocation.EncryptedLocation,
                 member.CurrentLocation.RecordedAt),
         RecentHistory: member.RecentHistory
-            .Select(p => new GeoPointDto(p.Lat, p.Lng, p.AccuracyMeters, p.RecordedAt))
+            .Select(p => new GeoPointDto(p.EncryptedLocation, p.RecordedAt))
             .ToList());
 }

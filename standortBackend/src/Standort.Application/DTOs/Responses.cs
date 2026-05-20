@@ -2,7 +2,6 @@ namespace Standort.Application.DTOs;
 
 public sealed record CreateGroupResponse(
     string GroupId,
-    string InviteCode,
     string MemberId,
     string MemberToken,
     string DisplayName,
@@ -16,9 +15,7 @@ public sealed record JoinGroupResponse(
     int HistoryDurationMinutes);
 
 public sealed record GeoPointDto(
-    double Lat,
-    double Lng,
-    double AccuracyMeters,
+    string EncryptedLocation,
     DateTimeOffset RecordedAt);
 
 public sealed record MemberLocationDto(
@@ -35,10 +32,9 @@ public sealed record GroupLocationsResponse(
 public sealed record MarkerDto(
     string MarkerId,
     string Name,
-    double Lat,
-    double Lng,
+    string EncryptedLocation,
+    string? EncryptedNotes,
     string? Color,
-    string? Notes,
     string? Icon,
     string CreatedByMemberId,
     DateTimeOffset CreatedAt);

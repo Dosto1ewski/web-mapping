@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Standort.Application.DTOs;
 using Standort.Application.Identity;
 using Standort.Application.Interfaces;
@@ -12,24 +14,19 @@ public sealed class GroupService
     private readonly IInviteCodeRepository _inviteRepo;
     private readonly ITokenGenerator _tokenGenerator;
     private readonly ITokenHasher _tokenHasher;
-    private readonly IInviteCodeGenerator _inviteCodeGenerator;
     private readonly ISystemClock _clock;
-
-    private const int InviteCodeMaxAttempts = 5;
 
     public GroupService(
         IGroupRepository groupRepo,
         IInviteCodeRepository inviteRepo,
         ITokenGenerator tokenGenerator,
         ITokenHasher tokenHasher,
-        IInviteCodeGenerator inviteCodeGenerator,
         ISystemClock clock)
     {
         _groupRepo = groupRepo;
         _inviteRepo = inviteRepo;
         _tokenGenerator = tokenGenerator;
         _tokenHasher = tokenHasher;
-        _inviteCodeGenerator = inviteCodeGenerator;
         _clock = clock;
     }
 
@@ -43,7 +40,8 @@ public sealed class GroupService
         var plainToken = _tokenGenerator.GeneratePlainToken();
         var tokenHash = _tokenHasher.Hash(plainToken);
 
-        var inviteCode = await ClaimInviteCodeAsync(groupId, now, ct);
+        if (!await _inviteRepo.TryCreateAsync(request.InviteCodeHash, groupId, now, ct))
+            throw new InvalidOperationException("Invite code hash already in use.");
 
         var group = new Group
         {
@@ -70,7 +68,6 @@ public sealed class GroupService
 
         return new CreateGroupResponse(
             GroupId: groupId,
-            InviteCode: inviteCode,
             MemberId: memberId,
             MemberToken: plainToken,
             DisplayName: displayName,
@@ -79,7 +76,8 @@ public sealed class GroupService
 
     public async Task<JoinGroupResponse> JoinGroupAsync(JoinGroupRequest request, CancellationToken ct)
     {
-        var groupId = await _inviteRepo.GetGroupIdByCodeAsync(request.InviteCode, ct)
+        var hash = HashInviteCode(request.InviteCode);
+        var groupId = await _inviteRepo.GetGroupIdByCodeAsync(hash, ct)
             ?? throw new InviteCodeNotFoundException(request.InviteCode);
 
         var displayName = request.DisplayName.Trim();
@@ -130,17 +128,9 @@ public sealed class GroupService
             HistoryDurationMinutes: written.HistoryDurationMinutes);
     }
 
-    private async Task<string> ClaimInviteCodeAsync(string groupId, DateTimeOffset now, CancellationToken ct)
+    private static string HashInviteCode(string inviteCode)
     {
-        for (var attempt = 0; attempt < InviteCodeMaxAttempts; attempt++)
-        {
-            var code = _inviteCodeGenerator.GenerateInviteCode();
-            if (await _inviteRepo.TryCreateAsync(code, groupId, now, ct))
-            {
-                return code;
-            }
-        }
-        throw new InvalidOperationException(
-            $"Could not generate a unique invite code after {InviteCodeMaxAttempts} attempts.");
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(inviteCode));
+        return Convert.ToHexStringLower(bytes);
     }
 }

@@ -3,13 +3,12 @@ import type {
   CreateGroupResponse,
   JoinGroupRequest,
   JoinGroupResponse,
-  UpdateLocationRequest,
   UpdateMemberSettingsRequest,
-  GroupLocationsResponse,
-  CreateMarkerRequest,
-  MarkerDto,
+  WireGroupLocationsResponse,
+  WireMarkerDto,
   ApiError,
 } from './types';
+import { encrypt } from '../crypto/groupCrypto';
 import { API_BASE } from './constants';
 
 export class ApiException extends Error {
@@ -55,15 +54,21 @@ export async function updateLocation(
   groupId: string,
   memberId: string,
   token: string,
-  req: UpdateLocationRequest,
+  cryptoKey: CryptoKey,
+  coords: { lat: number; lng: number; accuracyMeters: number },
+  recordedAt: string,
 ): Promise<void> {
+  const encryptedLocation = await encrypt(
+    cryptoKey,
+    JSON.stringify({ lat: coords.lat, lng: coords.lng, accuracyMeters: coords.accuracyMeters }),
+  );
   const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/location`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(req),
+    body: JSON.stringify({ encryptedLocation, recordedAt }),
   });
   if (res.status === 204) return;
   let body: ApiError;
@@ -121,30 +126,46 @@ export async function deleteMemberHistory(
 export async function getLocations(
   groupId: string,
   sinceVersion?: number,
-): Promise<GroupLocationsResponse | null> {
+): Promise<WireGroupLocationsResponse | null> {
   const qs = sinceVersion != null ? `?sinceVersion=${sinceVersion}` : '';
   const res = await fetch(`${API_BASE}/api/groups/${groupId}/locations${qs}`);
   if (res.status === 304) return null;
-  return handleResponse<GroupLocationsResponse>(res);
+  return handleResponse<WireGroupLocationsResponse>(res);
 }
 
 export async function createMarker(
   groupId: string,
   memberId: string,
   token: string,
-  req: CreateMarkerRequest,
-): Promise<MarkerDto> {
+  cryptoKey: CryptoKey,
+  params: {
+    name: string;
+    lat: number;
+    lng: number;
+    color: string | null;
+    notes: string | null;
+    icon?: 'tree' | 'book' | 'champagne' | 'default' | null;
+  },
+): Promise<WireMarkerDto> {
+  const encryptedLocation = await encrypt(cryptoKey, JSON.stringify({ lat: params.lat, lng: params.lng }));
+  const encryptedNotes = params.notes ? await encrypt(cryptoKey, params.notes) : null;
   const res = await fetch(`${API_BASE}/api/groups/${groupId}/members/${memberId}/markers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(req),
+    body: JSON.stringify({
+      name: params.name,
+      encryptedLocation,
+      encryptedNotes,
+      color: params.color,
+      icon: params.icon ?? null,
+    }),
   });
-  return handleResponse<MarkerDto>(res);
+  return handleResponse<WireMarkerDto>(res);
 }
 
-export async function getMarkers(groupId: string): Promise<MarkerDto[]> {
+export async function getMarkers(groupId: string): Promise<WireMarkerDto[]> {
   const res = await fetch(`${API_BASE}/api/groups/${groupId}/markers`);
-  return handleResponse<MarkerDto[]>(res);
+  return handleResponse<WireMarkerDto[]>(res);
 }
 
 export async function deleteMarker(

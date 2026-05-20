@@ -5,6 +5,7 @@ import { useSettings } from './state/settings';
 import { usePollLocations } from './hooks/usePollLocations';
 import { usePollMarkers } from './hooks/usePollMarkers';
 import { createMarker, deleteMarker, ApiException } from './api/client';
+import { deriveGroupKey } from './crypto/groupCrypto';
 import { fetchRoute, formatDistance, formatDuration, GraphHopperError } from './api/graphhopper';
 import type { RouteProfile } from './api/graphhopper';
 import Lobby from './components/Lobby';
@@ -32,7 +33,7 @@ interface ActiveRoute {
 export default function App() {
   const { session, setSession, clearSession } = useSession();
   const { settings, updateSettings } = useSettings();
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
   const [status, setStatus] = useState('');
   const [placingMarker, setPlacingMarker] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -42,13 +43,20 @@ export default function App() {
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
 
+  useEffect(() => {
+    if (!session) { setCryptoKey(null); return; }
+    deriveGroupKey(session.inviteCode, session.groupId).then(setCryptoKey);
+  }, [session?.inviteCode, session?.groupId]);
+
   const { members, error: locError } = usePollLocations(
     session?.groupId ?? null,
     settings.locationFetchSec * 1000,
+    cryptoKey,
   );
   const { markers, error: markerError, refresh: refreshMarkers } = usePollMarkers(
     session?.groupId ?? null,
     settings.markerFetchSec * 1000,
+    cryptoKey,
   );
 
   const defaultInviteCode = new URL(globalThis.location.href).searchParams.get('invite') ?? undefined;
@@ -65,15 +73,14 @@ export default function App() {
     return () => globalThis.clearTimeout(id);
   }, [markerError]);
 
-  function handleJoined(s: Session, code?: string) {
+  function handleJoined(s: Session) {
     setSession(s);
-    if (code) setInviteCode(code);
-    setStatus(code ? `Gruppe erstellt. Einladungscode: ${code}` : 'Beigetreten.');
+    setStatus(`Einladungscode: ${s.inviteCode}`);
   }
 
   function handleLeave() {
     clearSession();
-    setInviteCode(null);
+    setCryptoKey(null);
     setPlacingMarker(false);
     setPlacingLocation(false);
     setPendingCoords(null);
@@ -84,7 +91,7 @@ export default function App() {
 
   function handleSessionInvalidated() {
     clearSession();
-    setInviteCode(null);
+    setCryptoKey(null);
     setPlacingMarker(false);
     setPlacingLocation(false);
     setPendingCoords(null);
@@ -109,8 +116,8 @@ export default function App() {
   }
 
   async function handleCreateMarker(name: string, color: string | null, notes: string | null, icon?: 'tree' | 'book' | 'champagne' | 'default' | null) {
-    if (!session || !pendingCoords) return;
-    await createMarker(session.groupId, session.memberId, session.memberToken, {
+    if (!session || !pendingCoords || !cryptoKey) return;
+    await createMarker(session.groupId, session.memberId, session.memberToken, cryptoKey, {
       name,
       lat: pendingCoords.lat,
       lng: pendingCoords.lng,
@@ -177,7 +184,7 @@ export default function App() {
           {session ? (
             <MemberControls
               session={session}
-              inviteCode={inviteCode}
+              cryptoKey={cryptoKey}
               onLeave={handleLeave}
               onSessionInvalidated={handleSessionInvalidated}
               onStatus={setStatus}

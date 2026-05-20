@@ -7,7 +7,7 @@ public sealed class InviteCodeDocument
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
-    public string InviteCode { get; set; } = string.Empty;
+    public string InviteCodeHash { get; set; } = string.Empty;
 
     public string GroupId { get; set; } = string.Empty;
 

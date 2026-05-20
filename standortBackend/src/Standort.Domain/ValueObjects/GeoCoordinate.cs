@@ -1,8 +1,6 @@
 namespace Standort.Domain.ValueObjects;
 
 public sealed record GeoCoordinate(
-    double Lat,
-    double Lng,
-    double AccuracyMeters,
+    string EncryptedLocation,
     DateTimeOffset RecordedAt,
     DateTimeOffset ServerReceivedAt);

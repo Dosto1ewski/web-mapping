@@ -12,7 +12,7 @@ const MAX_HISTORY_DURATION_MIN = 2880;
 
 interface Props {
   session: Session;
-  inviteCode: string | null;
+  cryptoKey: CryptoKey | null;
   onLeave: () => void;
   onSessionInvalidated: () => void;
   onStatus: (msg: string) => void;
@@ -29,7 +29,7 @@ interface Props {
 
 export default function MemberControls({
   session,
-  inviteCode,
+  cryptoKey,
   onLeave,
   onSessionInvalidated,
   onStatus,
@@ -47,14 +47,17 @@ export default function MemberControls({
 
   const sendLocation = useCallback(
     async (coords: { latitude: number; longitude: number; accuracy: number }) => {
+      if (!cryptoKey) return;
       onOwnLocation({ lat: coords.latitude, lng: coords.longitude });
       try {
-        await updateLocation(session.groupId, session.memberId, session.memberToken, {
-          lat: coords.latitude,
-          lng: coords.longitude,
-          accuracyMeters: coords.accuracy ?? 0,
-          recordedAt: new Date().toISOString(),
-        });
+        await updateLocation(
+          session.groupId,
+          session.memberId,
+          session.memberToken,
+          cryptoKey,
+          { lat: coords.latitude, lng: coords.longitude, accuracyMeters: coords.accuracy ?? 0 },
+          new Date().toISOString(),
+        );
         onStatus('Standort geteilt.');
       } catch (err) {
         if (err instanceof ApiException && err.status === 401) {
@@ -64,7 +67,7 @@ export default function MemberControls({
         }
       }
     },
-    [session, onStatus, onSessionInvalidated, onOwnLocation],
+    [session, cryptoKey, onStatus, onSessionInvalidated, onOwnLocation],
   );
 
   const { autoShare, setAutoShare, getCurrent } = useGeolocation(
@@ -108,6 +111,7 @@ export default function MemberControls({
     }
   }
 
+  const inviteCode = session.inviteCode;
   const inviteLink = inviteCode
     ? `${globalThis.location.origin}${globalThis.location.pathname}?invite=${encodeURIComponent(inviteCode)}`
     : '';

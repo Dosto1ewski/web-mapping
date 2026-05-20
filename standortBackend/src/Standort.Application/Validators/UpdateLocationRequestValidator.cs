@@ -8,18 +8,12 @@ public sealed class UpdateLocationRequestValidator : AbstractValidator<UpdateLoc
 {
     public static readonly TimeSpan MaxClockSkewFuture = TimeSpan.FromSeconds(60);
     public static readonly TimeSpan MaxRecordedAtAge = TimeSpan.FromHours(24);
-    public const double MaxAccuracyMeters = 10_000;
 
     public UpdateLocationRequestValidator(ISystemClock clock)
     {
-        RuleFor(x => x.Lat)
-            .InclusiveBetween(-90, 90);
-
-        RuleFor(x => x.Lng)
-            .InclusiveBetween(-180, 180);
-
-        RuleFor(x => x.AccuracyMeters)
-            .InclusiveBetween(0, MaxAccuracyMeters);
+        RuleFor(x => x.EncryptedLocation)
+            .NotEmpty()
+            .MaximumLength(512);
 
         RuleFor(x => x.RecordedAt)
             .Must((req, recordedAt) =>

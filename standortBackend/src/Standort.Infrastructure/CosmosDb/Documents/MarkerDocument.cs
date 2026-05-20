@@ -17,13 +17,11 @@ public sealed class MarkerDocument
 
     public string Name { get; set; } = string.Empty;
 
-    public double Lat { get; set; }
+    public string EncryptedLocation { get; set; } = string.Empty;
 
-    public double Lng { get; set; }
+    public string? EncryptedNotes { get; set; }
 
     public string? Color { get; set; }
-
-    public string? Notes { get; set; }
 
     public string? Icon { get; set; }
 

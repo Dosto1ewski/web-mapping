@@ -54,7 +54,6 @@ builder.Services.AddSingleton<IMarkerRepository, CosmosMarkerRepository>();
 builder.Services.AddSingleton<ISystemClock, SystemClock>();
 builder.Services.AddSingleton<ITokenHasher, Sha256TokenHasher>();
 builder.Services.AddSingleton<ITokenGenerator, RandomTokenGenerator>();
-builder.Services.AddSingleton<IInviteCodeGenerator, CrockfordInviteCodeGenerator>();
 
 builder.Services.AddSingleton<GroupService>();
 builder.Services.AddSingleton<LocationService>();

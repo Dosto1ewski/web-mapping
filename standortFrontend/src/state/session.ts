@@ -6,6 +6,7 @@ export interface Session {
   memberToken: string;
   displayName: string;
   historyDurationMinutes: number;
+  inviteCode: string;
 }
 
 const DEFAULT_HISTORY_DURATION_MIN = 15;
@@ -15,13 +16,14 @@ function loadSession(): Session | null {
   const memberId = localStorage.getItem('memberId');
   const memberToken = localStorage.getItem('memberToken');
   const displayName = localStorage.getItem('displayName');
-  if (groupId && memberId && memberToken && displayName) {
+  const inviteCode = localStorage.getItem('inviteCode');
+  if (groupId && memberId && memberToken && displayName && inviteCode) {
     const storedRaw = localStorage.getItem('historyDurationMinutes');
     const stored = storedRaw !== null ? Number(storedRaw) : NaN;
     const historyDurationMinutes = Number.isFinite(stored) && stored >= 0
       ? stored
       : DEFAULT_HISTORY_DURATION_MIN;
-    return { groupId, memberId, memberToken, displayName, historyDurationMinutes };
+    return { groupId, memberId, memberToken, displayName, historyDurationMinutes, inviteCode };
   }
   return null;
 }
@@ -32,10 +34,11 @@ function saveSession(s: Session) {
   localStorage.setItem('memberToken', s.memberToken);
   localStorage.setItem('displayName', s.displayName);
   localStorage.setItem('historyDurationMinutes', String(s.historyDurationMinutes));
+  localStorage.setItem('inviteCode', s.inviteCode);
 }
 
 function clearSession() {
-  for (const k of ['groupId', 'memberId', 'memberToken', 'displayName', 'historyDurationMinutes']) {
+  for (const k of ['groupId', 'memberId', 'memberToken', 'displayName', 'historyDurationMinutes', 'inviteCode']) {
     localStorage.removeItem(k);
   }
 }

@@ -13,6 +13,11 @@ public sealed class CreateGroupRequestValidator : AbstractValidator<CreateGroupR
 
         RuleFor(x => x.CreatedByDisplayName)
             .SetValidator(new DisplayNameValidator());
+
+        RuleFor(x => x.InviteCodeHash)
+            .NotEmpty()
+            .Matches(@"^[0-9a-f]{64}$")
+            .WithMessage("InviteCodeHash must be a lowercase SHA-256 hex string (64 chars).");
     }
 }
 
@@ -22,8 +27,8 @@ public sealed class JoinGroupRequestValidator : AbstractValidator<JoinGroupReque
     {
         RuleFor(x => x.InviteCode)
             .NotEmpty()
-            .Matches(@"^[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}$")
-            .WithMessage("Invite code must match XXXX-XXXX (Crockford-Base32).");
+            .Matches(@"^[0-9A-HJ-NP-TV-Z]{8}-[0-9A-HJ-NP-TV-Z]{8}$")
+            .WithMessage("Invite code must match XXXXXXXX-XXXXXXXX (Crockford-Base32).");
 
         RuleFor(x => x.DisplayName)
             .SetValidator(new DisplayNameValidator());

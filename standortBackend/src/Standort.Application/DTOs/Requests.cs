@@ -1,21 +1,16 @@
 namespace Standort.Application.DTOs;
 
-public sealed record CreateGroupRequest(string Name, string CreatedByDisplayName);
+public sealed record CreateGroupRequest(string Name, string CreatedByDisplayName, string InviteCodeHash);
 
 public sealed record JoinGroupRequest(string InviteCode, string DisplayName);
 
-public sealed record UpdateLocationRequest(
-    double Lat,
-    double Lng,
-    double AccuracyMeters,
-    DateTimeOffset RecordedAt);
+public sealed record UpdateLocationRequest(string EncryptedLocation, DateTimeOffset RecordedAt);
 
 public sealed record UpdateMemberSettingsRequest(int HistoryDurationMinutes);
 
 public sealed record CreateMarkerRequest(
     string Name,
-    double Lat,
-    double Lng,
+    string EncryptedLocation,
+    string? EncryptedNotes,
     string? Color,
-    string? Notes,
     string? Icon);

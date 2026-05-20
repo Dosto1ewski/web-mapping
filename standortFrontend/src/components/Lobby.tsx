@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { createGroup, joinGroup, ApiException } from '../api/client';
+import { generateInviteCode, hashInviteCode } from '../crypto/groupCrypto';
 import type { Session } from '../state/session';
 
 interface Props {
   defaultInviteCode?: string;
-  onJoined: (session: Session, inviteCode?: string) => void;
+  onJoined: (session: Session) => void;
 }
 
 export default function Lobby({ defaultInviteCode, onJoined }: Props) {
@@ -23,17 +24,21 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     setLoading(true);
     setStatus('Gruppe wird erstellt...');
     try {
-      const res = await createGroup({ name: groupName.trim(), createdByDisplayName: creatorName.trim() });
-      onJoined(
-        {
-          groupId: res.groupId,
-          memberId: res.memberId,
-          memberToken: res.memberToken,
-          displayName: res.displayName,
-          historyDurationMinutes: res.historyDurationMinutes,
-        },
-        res.inviteCode,
-      );
+      const code = generateInviteCode();
+      const inviteCodeHash = await hashInviteCode(code);
+      const res = await createGroup({
+        name: groupName.trim(),
+        createdByDisplayName: creatorName.trim(),
+        inviteCodeHash,
+      });
+      onJoined({
+        groupId: res.groupId,
+        memberId: res.memberId,
+        memberToken: res.memberToken,
+        displayName: res.displayName,
+        historyDurationMinutes: res.historyDurationMinutes,
+        inviteCode: code,
+      });
     } catch (err) {
       setStatus(err instanceof ApiException ? err.message : 'Fehler beim Erstellen.');
     } finally {
@@ -49,13 +54,15 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     setLoading(true);
     setStatus('Beitreten...');
     try {
-      const res = await joinGroup({ inviteCode: inviteCode.trim().toUpperCase(), displayName: joinName.trim() });
+      const code = inviteCode.trim().toUpperCase();
+      const res = await joinGroup({ inviteCode: code, displayName: joinName.trim() });
       onJoined({
         groupId: res.groupId,
         memberId: res.memberId,
         memberToken: res.memberToken,
         displayName: res.displayName,
         historyDurationMinutes: res.historyDurationMinutes,
+        inviteCode: code,
       });
     } catch (err) {
       setStatus(err instanceof ApiException ? err.message : 'Fehler beim Beitreten.');
@@ -90,7 +97,7 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
       <section className="lobby-section">
         <h3>Gruppe beitreten</h3>
         <input
-          placeholder="Einladungscode (XXXX-XXXX)"
+          placeholder="Einladungscode (XXXXXXXX-XXXXXXXX)"
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
           disabled={loading}

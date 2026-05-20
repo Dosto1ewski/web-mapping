@@ -8,9 +8,7 @@ internal static class DocumentMappers
 {
     public static GeoPointDocument ToDocument(this GeoCoordinate value) => new()
     {
-        Lat = value.Lat,
-        Lng = value.Lng,
-        AccuracyMeters = value.AccuracyMeters,
+        EncryptedLocation = value.EncryptedLocation,
         RecordedAt = value.RecordedAt,
         ServerReceivedAt = value.ServerReceivedAt,
     };
@@ -48,20 +46,16 @@ internal static class DocumentMappers
         GroupId = marker.GroupId,
         MarkerId = marker.MarkerId,
         Name = marker.Name,
-        Lat = marker.Lat,
-        Lng = marker.Lng,
+        EncryptedLocation = marker.EncryptedLocation,
+        EncryptedNotes = marker.EncryptedNotes,
         Color = marker.Color,
-        Notes = marker.Notes,
         Icon = marker.Icon,
         CreatedByMemberId = marker.CreatedByMemberId,
         CreatedAt = marker.CreatedAt,
     };
 
-    // All ToDomain methods grouped together
     public static GeoCoordinate ToDomain(this GeoPointDocument doc) => new(
-        Lat: doc.Lat,
-        Lng: doc.Lng,
-        AccuracyMeters: doc.AccuracyMeters,
+        EncryptedLocation: doc.EncryptedLocation,
         RecordedAt: doc.RecordedAt,
         ServerReceivedAt: doc.ServerReceivedAt);
 
@@ -92,10 +86,9 @@ internal static class DocumentMappers
         MarkerId = doc.MarkerId,
         GroupId = doc.GroupId,
         Name = doc.Name,
-        Lat = doc.Lat,
-        Lng = doc.Lng,
+        EncryptedLocation = doc.EncryptedLocation,
+        EncryptedNotes = doc.EncryptedNotes,
         Color = doc.Color,
-        Notes = doc.Notes,
         Icon = doc.Icon,
         CreatedByMemberId = doc.CreatedByMemberId,
         CreatedAt = doc.CreatedAt,

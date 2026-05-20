@@ -23,7 +23,7 @@ public sealed class CosmosInviteCodeRepository : IInviteCodeRepository
         var doc = new InviteCodeDocument
         {
             Id = inviteCode,
-            InviteCode = inviteCode,
+            InviteCodeHash = inviteCode,
             GroupId = groupId,
             CreatedAt = createdAt,
         };
