@@ -14,7 +14,7 @@ interface Props {
   session: Session;
   cryptoKey: CryptoKey | null;
   onLeave: () => void;
-  onSessionInvalidated: () => void;
+  onSessionInvalidated: (staleToken?: string) => void;
   onStatus: (msg: string) => void;
   placingMarker: boolean;
   onTogglePlacingMarker: () => void;
@@ -90,7 +90,7 @@ export default function MemberControls({
       onStatus(`Verlaufsdauer: ${clamped} Min.`);
     } catch (err) {
       if (err instanceof ApiException && err.status === 401) {
-        onSessionInvalidated();
+        onSessionInvalidated(session.memberToken);
       } else {
         onStatus(err instanceof Error ? err.message : 'Verlaufsdauer konnte nicht gespeichert werden.');
       }
@@ -104,7 +104,7 @@ export default function MemberControls({
       onStatus('Verlauf gelöscht, Standortfreigabe deaktiviert.');
     } catch (err) {
       if (err instanceof ApiException && err.status === 401) {
-        onSessionInvalidated();
+        onSessionInvalidated(session.memberToken);
       } else {
         onStatus(err instanceof Error ? err.message : 'Verlauf konnte nicht gelöscht werden.');
       }

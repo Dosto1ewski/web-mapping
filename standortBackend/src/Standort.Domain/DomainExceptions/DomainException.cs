@@ -38,3 +38,18 @@ public sealed class ConcurrencyException : DomainException
 {
     public ConcurrencyException(string message) : base(message) { }
 }
+
+public sealed class NameInUseException : DomainException
+{
+    public NameInUseException(string displayName, DateTimeOffset lastSeen, bool hasLocation)
+        : base($"Display name '{displayName}' is already active in this group.")
+    {
+        DisplayName = displayName;
+        LastSeen = lastSeen;
+        HasLocation = hasLocation;
+    }
+
+    public string DisplayName { get; }
+    public DateTimeOffset LastSeen { get; }
+    public bool HasLocation { get; }
+}

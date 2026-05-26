@@ -2,10 +2,29 @@ import { useState } from 'react';
 import { createGroup, joinGroup, ApiException } from '../api/client';
 import { generateInviteCode, hashInviteCode } from '../crypto/groupCrypto';
 import type { Session } from '../state/session';
+import type { NameInUseError } from '../api/types';
 
 interface Props {
   defaultInviteCode?: string;
   onJoined: (session: Session) => void;
+}
+
+interface NameConflict {
+  inviteCode: string;
+  displayName: string;
+  lastSeen: string;
+  hasLocation: boolean;
+}
+
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(diffMs) || diffMs < 0) return 'gerade eben';
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 60) return `vor ${sec} Sek.`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `vor ${min} Min.`;
+  const hr = Math.round(min / 60);
+  return `vor ${hr} Std.`;
 }
 
 export default function Lobby({ defaultInviteCode, onJoined }: Props) {
@@ -15,6 +34,7 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
   const [joinName, setJoinName] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conflict, setConflict] = useState<NameConflict | null>(null);
 
   async function handleCreate() {
     if (!groupName.trim() || !creatorName.trim()) {
@@ -46,6 +66,18 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     }
   }
 
+  async function performJoin(code: string, displayName: string, takeover: boolean) {
+    const res = await joinGroup({ inviteCode: code, displayName, takeover });
+    onJoined({
+      groupId: res.groupId,
+      memberId: res.memberId,
+      memberToken: res.memberToken,
+      displayName: res.displayName,
+      historyDurationMinutes: res.historyDurationMinutes,
+      inviteCode: code,
+    });
+  }
+
   async function handleJoin() {
     if (!inviteCode.trim() || !joinName.trim()) {
       setStatus('Einladungscode und Dein Name sind erforderlich.');
@@ -55,20 +87,43 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
     setStatus('Beitreten...');
     try {
       const code = inviteCode.trim().toUpperCase();
-      const res = await joinGroup({ inviteCode: code, displayName: joinName.trim() });
-      onJoined({
-        groupId: res.groupId,
-        memberId: res.memberId,
-        memberToken: res.memberToken,
-        displayName: res.displayName,
-        historyDurationMinutes: res.historyDurationMinutes,
-        inviteCode: code,
-      });
+      const name = joinName.trim();
+      await performJoin(code, name, false);
     } catch (err) {
-      setStatus(err instanceof ApiException ? err.message : 'Fehler beim Beitreten.');
+      if (err instanceof ApiException && err.status === 409 && err.body.error === 'name_in_use') {
+        const c = err.body as unknown as NameInUseError;
+        setConflict({
+          inviteCode: inviteCode.trim().toUpperCase(),
+          displayName: joinName.trim(),
+          lastSeen: c.lastSeen,
+          hasLocation: c.hasLocation,
+        });
+        setStatus('');
+      } else {
+        setStatus(err instanceof ApiException ? err.message : 'Fehler beim Beitreten.');
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleConfirmTakeover() {
+    if (!conflict) return;
+    setLoading(true);
+    setStatus('Sitzung übernehmen...');
+    try {
+      await performJoin(conflict.inviteCode, conflict.displayName, true);
+      setConflict(null);
+    } catch (err) {
+      setStatus(err instanceof ApiException ? err.message : 'Übernahme fehlgeschlagen.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleCancelTakeover() {
+    setConflict(null);
+    setStatus('Bitte einen anderen Namen wählen.');
   }
 
   return (
@@ -114,6 +169,27 @@ export default function Lobby({ defaultInviteCode, onJoined }: Props) {
       </section>
 
       {status && <p className="status">{status}</p>}
+
+      {conflict && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Name bereits aktiv</h3>
+            <p>
+              Der Name <strong>{conflict.displayName}</strong> ist in dieser Gruppe gerade aktiv
+              (zuletzt {formatRelative(conflict.lastSeen)}{conflict.hasLocation ? ', mit geteiltem Standort' : ''}).
+            </p>
+            <p>Bist du das auf einem anderen Gerät?</p>
+            <div className="modal-actions">
+              <button type="button" onClick={handleConfirmTakeover} disabled={loading}>
+                Ja, Sitzung übernehmen
+              </button>
+              <button type="button" className="secondary-btn" onClick={handleCancelTakeover} disabled={loading}>
+                Anderen Namen wählen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

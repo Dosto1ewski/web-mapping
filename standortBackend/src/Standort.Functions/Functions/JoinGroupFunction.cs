@@ -54,5 +54,16 @@ public sealed class JoinGroupFunction
         {
             return ErrorResponses.NotFound("Invite code not found.");
         }
+        catch (NameInUseException ex)
+        {
+            return new ConflictObjectResult(new
+            {
+                error = "name_in_use",
+                message = ex.Message,
+                displayName = ex.DisplayName,
+                lastSeen = ex.LastSeen,
+                hasLocation = ex.HasLocation,
+            });
+        }
     }
 }

@@ -17,6 +17,15 @@ export interface CreateGroupResponse {
 export interface JoinGroupRequest {
   inviteCode: string;
   displayName: string;
+  takeover?: boolean;
+}
+
+export interface NameInUseError {
+  error: 'name_in_use';
+  message: string;
+  displayName: string;
+  lastSeen: string;
+  hasLocation: boolean;
 }
 
 export interface JoinGroupResponse {

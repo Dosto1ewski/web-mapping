@@ -36,6 +36,17 @@ export function useGeolocation(onPosition: (coords: Coords) => void, autoShareIn
     if (autoShareRef.current) startInterval();
   }, [startInterval]);
 
+  // Hard-stop the interval on unmount so a stale tick can't fire a request
+  // after the session is cleared (e.g. after Leave or session swap).
+  useEffect(() => {
+    return () => {
+      if (intervalIdRef.current != null) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, []);
+
   const setAutoShare = useCallback(
     (enabled: boolean) => {
       autoShareRef.current = enabled;

@@ -2,7 +2,7 @@ namespace Standort.Application.DTOs;
 
 public sealed record CreateGroupRequest(string Name, string CreatedByDisplayName, string InviteCodeHash);
 
-public sealed record JoinGroupRequest(string InviteCode, string DisplayName);
+public sealed record JoinGroupRequest(string InviteCode, string DisplayName, bool Takeover = false);
 
 public sealed record UpdateLocationRequest(string EncryptedLocation, DateTimeOffset RecordedAt);
 

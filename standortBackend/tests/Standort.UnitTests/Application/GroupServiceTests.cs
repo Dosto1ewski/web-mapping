@@ -106,10 +106,12 @@ public class GroupServiceTests
         _tokenGenerator.GeneratePlainToken().Returns("rotated-token");
         _tokenHasher.Hash("rotated-token").Returns("rotated-hash");
 
-        var existingLocation = new GeoCoordinate("e1.iv1.enc1", _clock.UtcNow.AddMinutes(-1), _clock.UtcNow.AddMinutes(-1));
+        // Use a stale last-seen so the join is treated as a cold reclaim (no
+        // takeover confirmation required).
+        var existingLocation = new GeoCoordinate("e1.iv1.enc1", _clock.UtcNow.AddHours(-2), _clock.UtcNow.AddHours(-2));
         var existingHistory = new List<GeoCoordinate>
         {
-            new("e1.iv2.enc2", _clock.UtcNow.AddMinutes(-3), _clock.UtcNow.AddMinutes(-3)),
+            new("e1.iv2.enc2", _clock.UtcNow.AddHours(-3), _clock.UtcNow.AddHours(-3)),
         };
         var existing = new Member
         {
@@ -145,5 +147,88 @@ public class GroupServiceTests
         capturedNewMember.CurrentLocation.Should().Be(existingLocation);
         capturedNewMember.RecentHistory.Should().BeEquivalentTo(existingHistory);
         capturedNewMember.DisplayNameNormalized.Should().Be("antonin");
+    }
+
+    [Fact]
+    public async Task JoinGroup_ActiveNameWithoutTakeover_ThrowsNameInUse()
+    {
+        var inviteCode = "AAAABBBB-CCCCDDDD";
+        var hash = HashCode(inviteCode);
+        var groupId = Guid.NewGuid().ToString("D");
+        var memberId = MemberIdFactory.FromGroupAndNormalizedName(groupId, "antonin");
+        _inviteRepo.GetGroupIdByCodeAsync(hash, Arg.Any<CancellationToken>()).Returns(groupId);
+        _tokenGenerator.GeneratePlainToken().Returns("rotated-token");
+        _tokenHasher.Hash("rotated-token").Returns("rotated-hash");
+
+        var existing = new Member
+        {
+            MemberId = memberId,
+            GroupId = groupId,
+            DisplayName = "Antonin",
+            DisplayNameNormalized = "antonin",
+            TokenHash = "old-hash",
+            TokenIssuedAt = _clock.UtcNow.AddSeconds(-30),
+            CurrentLocation = null,
+            RecentHistory = Array.Empty<GeoCoordinate>(),
+            LastUpdatedVersion = 5,
+        };
+
+        _groupRepo.ApplyMemberWriteAsync(
+                Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<Func<Group, Member?, Member>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var mutator = callInfo.Arg<Func<Group, Member?, Member>>();
+                var fakeGroup = new Group { GroupId = groupId, Name = "n", CreatedAt = _clock.UtcNow, Version = 5 };
+                return Task.FromResult(mutator(fakeGroup, existing));
+            });
+
+        var svc = BuildService();
+        var act = () => svc.JoinGroupAsync(new JoinGroupRequest(inviteCode, "Antonin"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NameInUseException>();
+    }
+
+    [Fact]
+    public async Task JoinGroup_ActiveNameWithTakeover_RotatesToken()
+    {
+        var inviteCode = "AAAABBBB-CCCCDDDD";
+        var hash = HashCode(inviteCode);
+        var groupId = Guid.NewGuid().ToString("D");
+        var memberId = MemberIdFactory.FromGroupAndNormalizedName(groupId, "antonin");
+        _inviteRepo.GetGroupIdByCodeAsync(hash, Arg.Any<CancellationToken>()).Returns(groupId);
+        _tokenGenerator.GeneratePlainToken().Returns("rotated-token");
+        _tokenHasher.Hash("rotated-token").Returns("rotated-hash");
+
+        var existing = new Member
+        {
+            MemberId = memberId,
+            GroupId = groupId,
+            DisplayName = "Antonin",
+            DisplayNameNormalized = "antonin",
+            TokenHash = "old-hash",
+            TokenIssuedAt = _clock.UtcNow.AddSeconds(-30),
+            CurrentLocation = null,
+            RecentHistory = Array.Empty<GeoCoordinate>(),
+            LastUpdatedVersion = 5,
+        };
+
+        Member? captured = null;
+        _groupRepo.ApplyMemberWriteAsync(
+                Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<Func<Group, Member?, Member>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var mutator = callInfo.Arg<Func<Group, Member?, Member>>();
+                var fakeGroup = new Group { GroupId = groupId, Name = "n", CreatedAt = _clock.UtcNow, Version = 5 };
+                captured = mutator(fakeGroup, existing);
+                return Task.FromResult(captured);
+            });
+
+        var svc = BuildService();
+        await svc.JoinGroupAsync(new JoinGroupRequest(inviteCode, "Antonin", Takeover: true), CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.TokenHash.Should().Be("rotated-hash");
     }
 }

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { useSession } from './state/session';
 import { useSettings } from './state/settings';
 import { usePollLocations } from './hooks/usePollLocations';
 import { usePollMarkers } from './hooks/usePollMarkers';
-import { createMarker, deleteMarker, ApiException } from './api/client';
+import { createMarker, deleteMarker, joinGroup, ApiException } from './api/client';
 import { deriveGroupKey } from './crypto/groupCrypto';
 import { fetchRoute, formatDistance, formatDuration, GraphHopperError } from './api/graphhopper';
 import type { RouteProfile } from './api/graphhopper';
@@ -42,6 +42,17 @@ export default function App() {
   const [ownLocation, setOwnLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [reclaimPending, setReclaimPending] = useState(false);
+  const [reclaiming, setReclaiming] = useState(false);
+
+  // Ref tracks the currently-valid token so we can ignore 401s caused by
+  // stale in-flight requests issued before a session swap (e.g. a leftover
+  // tick from the previous join). Only a 401 for the *current* token means
+  // another device actually took the name over.
+  const currentTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentTokenRef.current = session?.memberToken ?? null;
+  }, [session?.memberToken]);
 
   useEffect(() => {
     if (!session) { setCryptoKey(null); return; }
@@ -75,6 +86,7 @@ export default function App() {
 
   function handleJoined(s: Session) {
     setSession(s);
+    setReclaimPending(false);
     setStatus(`Einladungscode: ${s.inviteCode}`);
   }
 
@@ -86,18 +98,44 @@ export default function App() {
     setPendingCoords(null);
     setOwnLocation(null);
     setActiveRoute(null);
+    setReclaimPending(false);
     setStatus('Gruppe verlassen.');
   }
 
-  function handleSessionInvalidated() {
-    clearSession();
-    setCryptoKey(null);
-    setPlacingMarker(false);
-    setPlacingLocation(false);
-    setPendingCoords(null);
-    setOwnLocation(null);
-    setActiveRoute(null);
-    setStatus('Sitzung abgelaufen — ein anderes Gerät hat sich mit diesem Namen angemeldet.');
+  function handleSessionInvalidated(staleToken?: string) {
+    // Stale-request guard: a 401 whose token no longer matches the current
+    // session is almost certainly a leftover request from a prior join and
+    // must not invalidate the new session.
+    if (staleToken && staleToken !== currentTokenRef.current) return;
+    setReclaimPending(true);
+    setStatus('Eine andere Sitzung hat deinen Namen übernommen.');
+  }
+
+  async function handleReclaim() {
+    if (!session || reclaiming) return;
+    setReclaiming(true);
+    setStatus('Sitzung zurückholen...');
+    try {
+      const res = await joinGroup({
+        inviteCode: session.inviteCode,
+        displayName: session.displayName,
+        takeover: true,
+      });
+      setSession({
+        groupId: res.groupId,
+        memberId: res.memberId,
+        memberToken: res.memberToken,
+        displayName: res.displayName,
+        historyDurationMinutes: res.historyDurationMinutes,
+        inviteCode: session.inviteCode,
+      });
+      setReclaimPending(false);
+      setStatus('Sitzung zurückgeholt.');
+    } catch (err) {
+      setStatus(err instanceof ApiException ? err.message : 'Zurückholen fehlgeschlagen.');
+    } finally {
+      setReclaiming(false);
+    }
   }
 
   function handleTogglePlacingLocation() {
@@ -168,7 +206,7 @@ export default function App() {
       refreshMarkers();
     } catch (err) {
       if (err instanceof ApiException && err.status === 401) {
-        handleSessionInvalidated();
+        handleSessionInvalidated(session.memberToken);
       } else {
         setStatus(err instanceof Error ? err.message : 'Löschen fehlgeschlagen.');
       }
@@ -262,6 +300,31 @@ export default function App() {
           >
             ×
           </button>
+        </div>
+      )}
+
+      {session && reclaimPending && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Andere Sitzung aktiv</h3>
+            <p>
+              Eine andere Sitzung hat den Namen <strong>{session.displayName}</strong> in dieser Gruppe übernommen.
+              Du kannst die Sitzung zurückholen — das andere Gerät wird dann ausgeloggt.
+            </p>
+            <div className="modal-actions">
+              <button type="button" onClick={handleReclaim} disabled={reclaiming}>
+                Sitzung zurückholen
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={handleLeave}
+                disabled={reclaiming}
+              >
+                Verlassen
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

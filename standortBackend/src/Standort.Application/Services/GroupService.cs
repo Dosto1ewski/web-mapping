@@ -74,6 +74,11 @@ public sealed class GroupService
             HistoryDurationMinutes: member.HistoryDurationMinutes);
     }
 
+    // A member is considered "active" if either their token was issued or their
+    // last location was received within this window. A join attempt with the
+    // same name during this window must be confirmed by the user (takeover).
+    private static readonly TimeSpan ActiveMemberWindow = TimeSpan.FromMinutes(2);
+
     public async Task<JoinGroupResponse> JoinGroupAsync(JoinGroupRequest request, CancellationToken ct)
     {
         var hash = HashInviteCode(request.InviteCode);
@@ -107,6 +112,17 @@ public sealed class GroupService
                         // LastUpdatedVersion is overridden by the repository.
                         LastUpdatedVersion = 0,
                     };
+                }
+
+                if (!request.Takeover)
+                {
+                    var lastSeen = existing.CurrentLocation is { } loc && loc.ServerReceivedAt > existing.TokenIssuedAt
+                        ? loc.ServerReceivedAt
+                        : existing.TokenIssuedAt;
+                    if (now - lastSeen < ActiveMemberWindow)
+                    {
+                        throw new NameInUseException(existing.DisplayName, lastSeen, existing.CurrentLocation is not null);
+                    }
                 }
 
                 // Reclaim: rotate token, keep displayName casing as latest,
